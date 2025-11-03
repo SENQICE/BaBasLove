@@ -1,0 +1,38 @@
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+ xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+ x:Class="爸爸的爱.ReviewPage"
+ Title="复习模式"
+ BackgroundColor="{DynamicResource AppColorPageBackground}">
+ <Grid RowDefinitions="0.5*,Auto,Auto,Auto,*,Auto" ColumnDefinitions="*,*,*">
+ <!-- 占位使内容整体向上 -->
+ <Label Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" />
+ <!-- 单词 -->
+ <Label x:Name="WordLabel" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
+ FontSize="32" HorizontalOptions="Center" VerticalOptions="Center" TextColor="{DynamicResource AppColorTextPrimary}"
+ Margin="0,10,0,10"/>
+ <!-- 汉语意思 -->
+ <Label x:Name="MeaningLabel" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3"
+ FontSize="28" HorizontalOptions="Center" VerticalOptions="Center" TextColor="{DynamicResource AppColorTextSecondary}"
+ Margin="0,10,0,10"/>
+ <!-- 音标 -->
+ <Label x:Name="PhoneticLabel" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3"
+ FontSize="24" HorizontalOptions="Center" VerticalOptions="Center" TextColor="{DynamicResource AppColorTextSecondary}"
+ Margin="0,10,0,10"/>
+ <!-- 下一个按钮 -->
+ <Button x:Name="NextButton" Grid.Row="4" Grid.Column="1"
+ Text="下一个" FontSize="28"
+ HorizontalOptions="Center" VerticalOptions="Center"
+ Clicked="OnNextClicked"
+ WidthRequest="200"
+ Margin="0,10,0,10"
+ BackgroundColor="{DynamicResource AppColorButtonBackground}" TextColor="{DynamicResource AppColorButtonText}"/>
+ <!--退出按钮 -->
+ <Button x:Name="ExitButton" Grid.Row="5" Grid.Column="1"
+ Text="退出" FontSize="22"
+ HorizontalOptions="Center" VerticalOptions="Center"
+ Clicked="OnExitClicked"
+ WidthRequest="120"
+ Margin="0,10,0,10"
+ BackgroundColor="{DynamicResource AppColorButtonBackground}" TextColor="{DynamicResource AppColorButtonText}"/>
+ </Grid>
+</ContentPage>

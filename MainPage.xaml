@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+ xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+ x:Class="爸爸的爱.MainPage"
+ Title="爸爸的爱 小学英语冀教版"
+ NavigationPage.HasNavigationBar="False"
+ BackgroundColor="{DynamicResource AppColorPageBackground}">
+ <StackLayout Padding="30" Spacing="20">
+ <Label x:Name="TitleLabel" Text="爸爸的爱 小学英语冀教版"
+ FontSize="28"
+ HorizontalOptions="Center"
+ VerticalOptions="Center"
+ Margin="0,10,0,10"
+ TextColor="{DynamicResource AppColorTextPrimary}">
+ <Label.GestureRecognizers>
+ <TapGestureRecognizer Tapped="OnTitleTapped" NumberOfTapsRequired="1"/>
+ </Label.GestureRecognizers>
+ </Label>
+ <Label x:Name="WelcomeLabel" Text="欢迎感受来自爸爸的爱" FontSize="24" HorizontalOptions="Center" TextColor="{DynamicResource AppColorTextPrimary}"/>
+ <Label x:Name="CountdownLabel" Text="" FontSize="20" HorizontalOptions="Center" TextColor="{DynamicResource AppColorTextSecondary}"/>
+ <Button Text="家长设置" Clicked="OnParentModeClicked" BackgroundColor="{DynamicResource AppColorButtonBackground}" TextColor="{DynamicResource AppColorButtonText}"/>
+ <Button x:Name="SonModeButton" Text="儿子模式" Clicked="OnSonModeClicked" BackgroundColor="{DynamicResource AppColorButtonBackground}" TextColor="{DynamicResource AppColorButtonText}"/>
+ <Button x:Name="ReviewModeButton" Text="复习模式" Clicked="OnReviewModeClicked" BackgroundColor="{DynamicResource AppColorButtonBackground}" TextColor="{DynamicResource AppColorButtonText}"/>
+ <VerticalStackLayout x:Name="QuizRecordsLayout" Spacing="4" />
+
+ <!-- 心灵鸡汤内容：自适应高度并贴底显示 -->
+ <Frame x:Name="SoupFrame" BorderColor="{DynamicResource AppColorBorder}" BackgroundColor="{DynamicResource AppColorFrameBackground}" CornerRadius="8" Padding="10"
+ HorizontalOptions="Fill" VerticalOptions="End">
+ <Label x:Name="SoupLabel"
+ FontSize="14"
+ TextColor="{DynamicResource AppColorTextPrimary}"
+ HorizontalTextAlignment="Start"
+ VerticalTextAlignment="Start"
+ LineBreakMode="WordWrap"/>
+ </Frame>
+ </StackLayout>
+</ContentPage>

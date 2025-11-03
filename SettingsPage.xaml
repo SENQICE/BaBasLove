@@ -1,0 +1,207 @@
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="爸爸的爱.SettingsPage"
+    Title="家长设置">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="16">
+            <Label Text="考题范围设置" FontSize="20" />
+
+            <!-- 三年级上册 -->
+            <HorizontalStackLayout>
+                <Label Text="三年级上册" FontSize="18" />
+                <Switch x:Name="Grade3UpSwitch" Toggled="OnGrade3UpToggled"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Padding="20,0,0,0">
+                <Label Text="第一单元" FontSize="16" />
+                <Switch x:Name="Unit1_3UpSwitch"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Padding="20,0,0,0">
+                <Label Text="第二单元" FontSize="16" />
+                <Switch x:Name="Unit2_3UpSwitch"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Padding="20,0,0,0">
+                <Label Text="第三单元" FontSize="16" />
+                <Switch x:Name="Unit3_3UpSwitch"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Padding="20,0,0,0">
+                <Label Text="第四单元" FontSize="16" />
+                <Switch x:Name="Unit4_3UpSwitch"/>
+            </HorizontalStackLayout>
+
+            <!-- 三年级下册 -->
+            <HorizontalStackLayout>
+                <Label Text="三年级下册" FontSize="18" />
+                <Switch x:Name="Grade3DownSwitch" Toggled="OnGrade3DownToggled"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Padding="20,0,0,0">
+                <Label Text="第一单元" FontSize="16" />
+                <Switch x:Name="Unit1_3DownSwitch"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Padding="20,0,0,0">
+                <Label Text="第二单元" FontSize="16" />
+                <Switch x:Name="Unit2_3DownSwitch"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Padding="20,0,0,0">
+                <Label Text="第三单元" FontSize="16" />
+                <Switch x:Name="Unit3_3DownSwitch"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Padding="20,0,0,0">
+                <Label Text="第四单元" FontSize="16" />
+                <Switch x:Name="Unit4_3DownSwitch"/>
+            </HorizontalStackLayout>
+
+            <!-- 四年级上册 -->
+            <HorizontalStackLayout>
+                <Label Text="四年级上册" FontSize="18" />
+                <Switch x:Name="Grade4UpSwitch" Toggled="OnGrade4UpToggled"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Padding="20,0,0,0">
+                <Label Text="第一单元" FontSize="16" />
+                <Switch x:Name="Unit1_4UpSwitch"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Padding="20,0,0,0">
+                <Label Text="第二单元" FontSize="16" />
+                <Switch x:Name="Unit2_4UpSwitch"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Padding="20,0,0,0">
+                <Label Text="第三单元" FontSize="16" />
+                <Switch x:Name="Unit3_4UpSwitch"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Padding="20,0,0,0">
+                <Label Text="第四单元" FontSize="16" />
+                <Switch x:Name="Unit4_4UpSwitch"/>
+            </HorizontalStackLayout>
+
+            <!-- 四年级下册 -->
+            <HorizontalStackLayout>
+                <Label Text="四年级下册" FontSize="18" />
+                <Switch x:Name="Grade4DownSwitch" Toggled="OnGrade4DownToggled"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Padding="20,0,0,0">
+                <Label Text="第一单元" FontSize="16" />
+                <Switch x:Name="Unit1_4DownSwitch"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Padding="20,0,0,0">
+                <Label Text="第二单元" FontSize="16" />
+                <Switch x:Name="Unit2_4DownSwitch"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Padding="20,0,0,0">
+                <Label Text="第三单元" FontSize="16" />
+                <Switch x:Name="Unit3_4DownSwitch"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Padding="20,0,0,0">
+                <Label Text="第四单元" FontSize="16" />
+                <Switch x:Name="Unit4_4DownSwitch"/>
+            </HorizontalStackLayout>
+
+            <!-- 五年级上册 -->
+            <HorizontalStackLayout>
+                <Label Text="五年级上册" FontSize="18" />
+                <Switch x:Name="GradeUpSwitch" Toggled="OnGradeUpToggled"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Padding="20,0,0,0">
+                <Label Text="第一单元" FontSize="16" />
+                <Switch x:Name="Unit1UpSwitch"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Padding="20,0,0,0">
+                <Label Text="第二单元" FontSize="16" />
+                <Switch x:Name="Unit2UpSwitch"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Padding="20,0,0,0">
+                <Label Text="第三单元" FontSize="16" />
+                <Switch x:Name="Unit3UpSwitch"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Padding="20,0,0,0">
+                <Label Text="第四单元" FontSize="16" />
+                <Switch x:Name="Unit4UpSwitch"/>
+            </HorizontalStackLayout>
+
+            <!-- 五年级下册 -->
+            <HorizontalStackLayout>
+                <Label Text="五年级下册" FontSize="18" />
+                <Switch x:Name="GradeDownSwitch" Toggled="OnGradeDownToggled"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Padding="20,0,0,0">
+                <Label Text="第一单元" FontSize="16" />
+                <Switch x:Name="Unit1DownSwitch"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Padding="20,0,0,0">
+                <Label Text="第二单元" FontSize="16" />
+                <Switch x:Name="Unit2DownSwitch"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Padding="20,0,0,0">
+                <Label Text="第三单元" FontSize="16" />
+                <Switch x:Name="Unit3DownSwitch"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Padding="20,0,0,0">
+                <Label Text="第四单元" FontSize="16" />
+                <Switch x:Name="Unit4DownSwitch"/>
+            </HorizontalStackLayout>
+
+            <!-- 六年级上册 -->
+            <HorizontalStackLayout>
+                <Label Text="六年级上册" FontSize="18" />
+                <Switch x:Name="Grade6UpSwitch" Toggled="OnGrade6UpToggled"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Padding="20,0,0,0">
+                <Label Text="第一单元" FontSize="16" />
+                <Switch x:Name="Unit1_6UpSwitch"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Padding="20,0,0,0">
+                <Label Text="第二单元" FontSize="16" />
+                <Switch x:Name="Unit2_6UpSwitch"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Padding="20,0,0,0">
+                <Label Text="第三单元" FontSize="16" />
+                <Switch x:Name="Unit3_6UpSwitch"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Padding="20,0,0,0">
+                <Label Text="第四单元" FontSize="16" />
+                <Switch x:Name="Unit4_6UpSwitch"/>
+            </HorizontalStackLayout>
+
+            <!-- 六年级下册 -->
+            <HorizontalStackLayout>
+                <Label Text="六年级下册" FontSize="18" />
+                <Switch x:Name="Grade6DownSwitch" Toggled="OnGrade6DownToggled"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Padding="20,0,0,0">
+                <Label Text="第一单元" FontSize="16" />
+                <Switch x:Name="Unit1_6DownSwitch"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Padding="20,0,0,0">
+                <Label Text="第二单元" FontSize="16" />
+                <Switch x:Name="Unit2_6DownSwitch"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Padding="20,0,0,0">
+                <Label Text="第三单元" FontSize="16" />
+                <Switch x:Name="Unit3_6DownSwitch"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Padding="20,0,0,0">
+                <Label Text="第四单元" FontSize="16" />
+                <Switch x:Name="Unit4_6DownSwitch"/>
+            </HorizontalStackLayout>
+
+            <Label Text="答题数量" FontSize="18" />
+            <Entry x:Name="QuestionCountEntry" Keyboard="Numeric" Placeholder="最少8个" Text="8" WidthRequest="80"/>
+
+            <Label Text="每题答题时间（秒）" FontSize="18" />
+            <Entry x:Name="TimePerQuestionEntry" Keyboard="Numeric" Placeholder="默认30" Text="30" WidthRequest="80"/>
+
+            <!-- 新增笔答模式开关 -->
+            <HorizontalStackLayout>
+                <Label Text="笔答模式" FontSize="18" />
+                <Switch x:Name="WrittenModeSwitch"/>
+            </HorizontalStackLayout>
+
+            <Button Text="更改家长密码" Clicked="OnChangePasswordClicked" />
+            <Button Text="清除答题记录" Clicked="OnClearQuizRecordsClicked" BackgroundColor="Red" TextColor="White"/>
+
+
+            <Button Text="保存设置" Clicked="OnSaveClicked"/>
+            
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

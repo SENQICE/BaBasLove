@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+ xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+ xmlns:local="clr-namespace:爸爸的爱"
+ x:Class="爸爸的爱.QuizPage"
+ BackgroundColor="{DynamicResource AppColorPageBackground}">
+ <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto,Auto" ColumnDefinitions="*,*,*">
+ <!-- 倒计时 -->
+ <Label x:Name="TimerLabel" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3"
+ FontSize="22" TextColor="{DynamicResource AppColorTextSecondary}" HorizontalOptions="Center" VerticalOptions="Center"/>
+ <!-- 错误提示 -->
+ <Label x:Name="FeedbackLabel" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
+ FontSize="18" TextColor="Red" VerticalOptions="Center" HorizontalOptions="Center"/>
+ <!-- 汉字意思 -->
+ <Label x:Name="QuestionLabel" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3"
+ FontSize="32" HorizontalOptions="Center" VerticalOptions="Center" TextColor="{DynamicResource AppColorTextPrimary}"
+ Margin="0,10,0,10"/>
+
+ <!-- 自绘输入框（显示文字与模拟光标） -->
+ <Border x:Name="InputHost" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3"
+ BackgroundColor="{DynamicResource AppColorFrameBackground}" Stroke="{DynamicResource AppColorBorder}"
+ StrokeShape="RoundRectangle6" Padding="12" HorizontalOptions="Center" WidthRequest="320">
+ <Grid x:Name="InputGrid" ColumnDefinitions="Auto,2,Auto" VerticalOptions="Center">
+ <Label x:Name="BeforeLabel" FontSize="28" TextColor="{DynamicResource AppColorTextPrimary}"/>
+ <BoxView x:Name="CaretBox" Grid.Column="1" WidthRequest="2" HeightRequest="30" VerticalOptions="Center" Color="{DynamicResource AppColorTextPrimary}"/>
+ <Label x:Name="AfterLabel" Grid.Column="2" FontSize="28" TextColor="{DynamicResource AppColorTextPrimary}"/>
+ <!--触摸捕获层：用于点击/拖动定位光标 -->
+ <GraphicsView x:Name="InputTouch" Grid.ColumnSpan="3" BackgroundColor="Transparent"
+ StartInteraction="OnInputTouchStart" DragInteraction="OnInputTouchDrag" EndInteraction="OnInputTouchEnd" />
+ </Grid>
+ </Border>
+
+ <!-- 隐藏的 Entry（保持兼容，避免系统输入法） -->
+ <local:NoImeEntry x:Name="AnswerEntry" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" IsVisible="False" HeightRequest="0"/>
+
+ <!-- 提交按钮 -->
+ <Button x:Name="SubmitButton"
+ Grid.Row="4" Grid.Column="1"
+ Text="提交" FontSize="28"
+ HorizontalOptions="Center"
+ VerticalOptions="Start"
+ Clicked="OnSubmitClicked"
+ WidthRequest="200"
+ Margin="0,10,0,10"
+ BackgroundColor="{DynamicResource AppColorButtonBackground}" TextColor="{DynamicResource AppColorButtonText}"/>
+ <Button x:Name="NextButton"
+ Grid.Row="4" Grid.Column="1"
+ Text="下一个" FontSize="28"
+ HorizontalOptions="Center"
+ VerticalOptions="Start"
+ Clicked="OnNextClicked"
+ WidthRequest="200"
+ IsVisible="False"
+ Margin="0,10,0,10"
+ BackgroundColor="{DynamicResource AppColorButtonBackground}" TextColor="{DynamicResource AppColorButtonText}"/>
+
+ <!-- 提示按钮：右侧对齐，和控制行高度一致 -->
+ <Button x:Name="HintButton" Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="3"
+ Text="提示" FontSize="18" HorizontalOptions="End" VerticalOptions="Center"
+ Clicked="OnHintClicked" HeightRequest="44" WidthRequest="90"
+ BackgroundColor="{DynamicResource AppColorKeyBackground}" TextColor="{DynamicResource AppColorKeyText}" Margin="0,0,10,0"/>
+
+ <!-- 自定义虚拟键盘（普通模式可见） -->
+ <Grid x:Name="VirtualKeyboardGrid" Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="3"
+ IsVisible="True" Padding="8" RowDefinitions="Auto,Auto,Auto,Auto"
+ RowSpacing="6" BackgroundColor="{DynamicResource AppColorFrameBackground}">
+ <Grid.Resources>
+ <!-- 键盘范围内的按钮统一样式（不影响上方提交/提示等按钮） -->
+ <Style TargetType="Button">
+ <Setter Property="Padding" Value="0" />
+ <Setter Property="Margin" Value="0" />
+ <Setter Property="HeightRequest" Value="56" />
+ <Setter Property="FontSize" Value="18" />
+ <Setter Property="FontAttributes" Value="Bold" />
+ <Setter Property="CornerRadius" Value="6" />
+ <Setter Property="BackgroundColor" Value="{DynamicResource AppColorKeyBackground}" />
+ <Setter Property="TextColor" Value="{DynamicResource AppColorKeyText}" />
+ </Style>
+ </Grid.Resources>
+ <!-- 第一行 qwertyuiop10列均分 -->
+ <Grid Grid.Row="0" ColumnSpacing="4" ColumnDefinitions="*,*,*,*,*,*,*,*,*,*">
+ <Button ClassId="Letter" Text="q" Clicked="OnKeyButtonClicked" Grid.Column="0" HorizontalOptions="Fill"/>
+ <Button ClassId="Letter" Text="w" Clicked="OnKeyButtonClicked" Grid.Column="1" HorizontalOptions="Fill"/>
+ <Button ClassId="Letter" Text="e" Clicked="OnKeyButtonClicked" Grid.Column="2" HorizontalOptions="Fill"/>
+ <Button ClassId="Letter" Text="r" Clicked="OnKeyButtonClicked" Grid.Column="3" HorizontalOptions="Fill"/>
+ <Button ClassId="Letter" Text="t" Clicked="OnKeyButtonClicked" Grid.Column="4" HorizontalOptions="Fill"/>
+ <Button ClassId="Letter" Text="y" Clicked="OnKeyButtonClicked" Grid.Column="5" HorizontalOptions="Fill"/>
+ <Button ClassId="Letter" Text="u" Clicked="OnKeyButtonClicked" Grid.Column="6" HorizontalOptions="Fill"/>
+ <Button ClassId="Letter" Text="i" Clicked="OnKeyButtonClicked" Grid.Column="7" HorizontalOptions="Fill"/>
+ <Button ClassId="Letter" Text="o" Clicked="OnKeyButtonClicked" Grid.Column="8" HorizontalOptions="Fill"/>
+ <Button ClassId="Letter" Text="p" Clicked="OnKeyButtonClicked" Grid.Column="9" HorizontalOptions="Fill"/>
+ </Grid>
+ <!-- 第二行 asdfghjkl9列均分 -->
+ <Grid Grid.Row="1" ColumnSpacing="4" ColumnDefinitions="*,*,*,*,*,*,*,*,*">
+ <Button ClassId="Letter" Text="a" Clicked="OnKeyButtonClicked" Grid.Column="0" HorizontalOptions="Fill"/>
+ <Button ClassId="Letter" Text="s" Clicked="OnKeyButtonClicked" Grid.Column="1" HorizontalOptions="Fill"/>
+ <Button ClassId="Letter" Text="d" Clicked="OnKeyButtonClicked" Grid.Column="2" HorizontalOptions="Fill"/>
+ <Button ClassId="Letter" Text="f" Clicked="OnKeyButtonClicked" Grid.Column="3" HorizontalOptions="Fill"/>
+ <Button ClassId="Letter" Text="g" Clicked="OnKeyButtonClicked" Grid.Column="4" HorizontalOptions="Fill"/>
+ <Button ClassId="Letter" Text="h" Clicked="OnKeyButtonClicked" Grid.Column="5" HorizontalOptions="Fill"/>
+ <Button ClassId="Letter" Text="j" Clicked="OnKeyButtonClicked" Grid.Column="6" HorizontalOptions="Fill"/>
+ <Button ClassId="Letter" Text="k" Clicked="OnKeyButtonClicked" Grid.Column="7" HorizontalOptions="Fill"/>
+ <Button ClassId="Letter" Text="l" Clicked="OnKeyButtonClicked" Grid.Column="8" HorizontalOptions="Fill"/>
+ </Grid>
+ <!-- 第三行 zxcvbnm7列均分 -->
+ <Grid Grid.Row="2" ColumnSpacing="4" ColumnDefinitions="*,*,*,*,*,*,*">
+ <Button ClassId="Letter" Text="z" Clicked="OnKeyButtonClicked" Grid.Column="0" HorizontalOptions="Fill"/>
+ <Button ClassId="Letter" Text="x" Clicked="OnKeyButtonClicked" Grid.Column="1" HorizontalOptions="Fill"/>
+ <Button ClassId="Letter" Text="c" Clicked="OnKeyButtonClicked" Grid.Column="2" HorizontalOptions="Fill"/>
+ <Button ClassId="Letter" Text="v" Clicked="OnKeyButtonClicked" Grid.Column="3" HorizontalOptions="Fill"/>
+ <Button ClassId="Letter" Text="b" Clicked="OnKeyButtonClicked" Grid.Column="4" HorizontalOptions="Fill"/>
+ <Button ClassId="Letter" Text="n" Clicked="OnKeyButtonClicked" Grid.Column="5" HorizontalOptions="Fill"/>
+ <Button ClassId="Letter" Text="m" Clicked="OnKeyButtonClicked" Grid.Column="6" HorizontalOptions="Fill"/>
+ </Grid>
+ <!-- 第四行 控制键：大小写/空格/./退格 =2:4:2:2 -->
+ <Grid Grid.Row="3" ColumnSpacing="8" ColumnDefinitions="2*,4*,2*,2*">
+ <Button x:Name="ShiftButton" Text="小写" Clicked="OnShiftClicked" Grid.Column="0" HorizontalOptions="Fill"/>
+ <Button x:Name="SpaceButton" Text="空格" Clicked="OnSpaceClicked" Grid.Column="1" HorizontalOptions="Fill">
+ <Button.GestureRecognizers>
+ <PanGestureRecognizer PanUpdated="OnSpacePanUpdated"/>
+ </Button.GestureRecognizers>
+ </Button>
+ <Button ClassId="Letter" Text="." Clicked="OnKeyButtonClicked" Grid.Column="2" HorizontalOptions="Fill"/>
+ <Button Text="退格" Clicked="OnBackspaceClicked" Grid.Column="3" HorizontalOptions="Fill"/>
+ </Grid>
+ </Grid>
+
+ <!-- 音标显示（仅笔答模式提示后显示） -->
+ <Label x:Name="PhoneticLabel" Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="3"
+ FontSize="22" TextColor="DarkBlue" HorizontalOptions="Center" VerticalOptions="Center"
+ IsVisible="False"/>
+ </Grid>
+</ContentPage>
