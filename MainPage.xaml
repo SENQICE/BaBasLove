@@ -5,7 +5,10 @@
  Title="爸爸的爱 小学英语冀教版"
  NavigationPage.HasNavigationBar="False"
  BackgroundColor="{DynamicResource AppColorPageBackground}">
- <StackLayout Padding="30" Spacing="20">
+ <Grid Padding="20" RowDefinitions="Auto,Auto,*,Auto" ColumnDefinitions="*" RowSpacing="10">
+ 
+ <!-- 标题与欢迎语 -->
+ <StackLayout Grid.Row="0" Spacing="10">
  <Label x:Name="TitleLabel" Text="爸爸的爱 小学英语冀教版"
  FontSize="28"
  HorizontalOptions="Center"
@@ -18,13 +21,25 @@
  </Label>
  <Label x:Name="WelcomeLabel" Text="欢迎感受来自爸爸的爱" FontSize="24" HorizontalOptions="Center" TextColor="{DynamicResource AppColorTextPrimary}"/>
  <Label x:Name="CountdownLabel" Text="" FontSize="20" HorizontalOptions="Center" TextColor="{DynamicResource AppColorTextSecondary}"/>
- <Button Text="家长设置" Clicked="OnParentModeClicked" BackgroundColor="{DynamicResource AppColorButtonBackground}" TextColor="{DynamicResource AppColorButtonText}"/>
- <Button x:Name="SonModeButton" Text="儿子模式" Clicked="OnSonModeClicked" BackgroundColor="{DynamicResource AppColorButtonBackground}" TextColor="{DynamicResource AppColorButtonText}"/>
- <Button x:Name="ReviewModeButton" Text="复习模式" Clicked="OnReviewModeClicked" BackgroundColor="{DynamicResource AppColorButtonBackground}" TextColor="{DynamicResource AppColorButtonText}"/>
- <VerticalStackLayout x:Name="QuizRecordsLayout" Spacing="4" />
+ </StackLayout>
 
- <!-- 心灵鸡汤内容：自适应高度并贴底显示 -->
- <Frame x:Name="SoupFrame" BorderColor="{DynamicResource AppColorBorder}" BackgroundColor="{DynamicResource AppColorFrameBackground}" CornerRadius="8" Padding="10"
+ <!-- 两行按钮：第一行 儿子模式、复习模式；第二行 挑战模式、家长设置 -->
+ <Grid Grid.Row="1" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12">
+ <Button x:Name="SonModeButton" Grid.Row="0" Grid.Column="0" Text="儿子模式" Clicked="OnSonModeClicked" BackgroundColor="{DynamicResource AppColorButtonBackground}" TextColor="{DynamicResource AppColorButtonText}"/>
+ <Button x:Name="ReviewModeButton" Grid.Row="0" Grid.Column="1" Text="复习模式" Clicked="OnReviewModeClicked" BackgroundColor="{DynamicResource AppColorButtonBackground}" TextColor="{DynamicResource AppColorButtonText}"/>
+ <Button x:Name="ChallengeModeButton" Grid.Row="1" Grid.Column="0" Text="挑战模式" Clicked="OnChallengeModeClicked" BackgroundColor="{DynamicResource AppColorButtonBackground}" TextColor="{DynamicResource AppColorButtonText}"/>
+ <Button Text="家长设置" Grid.Row="1" Grid.Column="1" Clicked="OnParentModeClicked" BackgroundColor="{DynamicResource AppColorButtonBackground}" TextColor="{DynamicResource AppColorButtonText}"/>
+ </Grid>
+
+ <!--记录列表：自适应（占据可用空间），与上下区块间距一致 -->
+ <Frame Grid.Row="2" Padding="0" HasShadow="False" BackgroundColor="{DynamicResource AppColorFrameBackground}" BorderColor="{DynamicResource AppColorBorder}" CornerRadius="8">
+ <ScrollView>
+ <VerticalStackLayout x:Name="QuizRecordsLayout" Spacing="6" Padding="10"/>
+ </ScrollView>
+ </Frame>
+
+ <!-- 心灵鸡汤内容：贴底显示，与上方记录区间距一致 -->
+ <Frame Grid.Row="3" x:Name="SoupFrame" BorderColor="{DynamicResource AppColorBorder}" BackgroundColor="{DynamicResource AppColorFrameBackground}" CornerRadius="8" Padding="10"
  HorizontalOptions="Fill" VerticalOptions="End">
  <Label x:Name="SoupLabel"
  FontSize="14"
@@ -33,5 +48,5 @@
  VerticalTextAlignment="Start"
  LineBreakMode="WordWrap"/>
  </Frame>
- </StackLayout>
+ </Grid>
 </ContentPage>

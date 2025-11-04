@@ -17,6 +17,13 @@ public partial class MainPage : ContentPage
     private List<QuizHistory> _quizHistories = new();
     private static readonly Random _rand = new();
 
+    // 新增：挑战模式记录摘要模型（仅首页展示用）
+    private class ChallengeRecord
+    {
+        public DateTime Date { get; set; }
+        public int CorrectCount { get; set; }
+    }
+
     //主题状态
     private const string Pref_EyeCare = "EyeCareEnabled";
 
@@ -243,9 +250,24 @@ public partial class MainPage : ContentPage
     private void OnQuizRecordsCleared()
     {
         _quizRecords.Clear();
-        SaveQuizRecords();
+        // 清除普通模式记录
+        Preferences.Remove("QuizRecords");
+        // 删除普通/挑战历史文件
+        try
+        {
+            string file = Path.Combine(FileSystem.AppDataDirectory, "QuizHistory.json");
+            if (File.Exists(file)) File.Delete(file);
+        }
+        catch { }
+        try
+        {
+            string cfile = Path.Combine(FileSystem.AppDataDirectory, "ChallengeRecords.json");
+            if (File.Exists(cfile)) File.Delete(cfile);
+        }
+        catch { }
         UpdateQuizRecordsView();
     }
+
     private async void OnParentModeClicked(object sender, EventArgs e)
     {
         // 正确写法：
@@ -260,7 +282,7 @@ public partial class MainPage : ContentPage
         );
         if (pwd == null)
         {
-            // 取消直接返回首页
+            //取消直接返回首页
             return;
         }
         string realPwd = Preferences.Get("ParentPassword", "z123456");
@@ -286,6 +308,15 @@ public partial class MainPage : ContentPage
         Application.Current.MainPage.Navigation.PushModalAsync(new QuizPage(OnQuizRoundFinished));
     }
 
+    private async void OnChallengeModeClicked(object sender, EventArgs e)
+    {
+        // 新增：挑战模式入口
+        if (sender is Button b) b.IsEnabled = false;
+        WelcomeLabel.Text = "挑战开始，加油！";
+        await Application.Current.MainPage.Navigation.PushModalAsync(new QuizPage(OnQuizRoundFinished, challengeMode: true));
+        if (sender is Button b2) b2.IsEnabled = true;
+    }
+
     private async void OnReviewModeClicked(object sender, EventArgs e)
     {
         await Navigation.PushModalAsync(new ReviewPage());
@@ -296,7 +327,7 @@ public partial class MainPage : ContentPage
     {
         _quizRecords.Insert(0, new QuizRecord
         {
-            Attempt = _quizRecords.Count + 1,
+            Attempt = _quizRecords.Count +1,
             CorrectCount = correctCount,
             TotalCount = totalCount,
             IsSuccess = isSuccess
@@ -364,8 +395,42 @@ public partial class MainPage : ContentPage
     private void UpdateQuizRecordsView()
     {
         QuizRecordsLayout.Children.Clear();
+
+        // 展示挑战模式记录（仅摘要，不含试卷内容）——按历史最高纪录显示
+        try
+        {
+            string cfile = Path.Combine(FileSystem.AppDataDirectory, "ChallengeRecords.json");
+            if (File.Exists(cfile))
+            {
+                var json = File.ReadAllText(cfile);
+                var cr = JsonSerializer.Deserialize<List<ChallengeRecord>>(json) ?? new();
+
+                // 历史最高纪录：先计算一次
+                int best =0;
+                for (int k =0; k < cr.Count; k++)
+                {
+                    if (cr[k].CorrectCount > best)
+                        best = cr[k].CorrectCount;
+                }
+
+                // 再渲染每条记录，统一显示历史最高
+                for (int i =0; i < cr.Count; i++)
+                {
+                    var r = cr[i];
+                    var lbl = new Label
+                    {
+                        Text = $"[挑战] 第{cr.Count - i}次：答对{r.CorrectCount}个单词（最高纪录{best}）",
+                        FontSize =16
+                    };
+                    QuizRecordsLayout.Children.Add(lbl);
+                }
+            }
+        }
+        catch { }
+
+        // 普通模式历史：显示全部（外层 ScrollView 可滑动）
         LoadQuizHistories();
-        int showCount = Math.Min(_quizHistories.Count,13); // 最多显示15条历史
+        int showCount = _quizHistories.Count; // 显示全部
         for (int i =0; i < showCount; i++)
         {
             var h = _quizHistories[i];
@@ -397,5 +462,7 @@ public partial class MainPage : ContentPage
 #if ANDROID
         App.SetStatusBarBlackText();
 #endif
+        // 返回首页刷新记录
+        UpdateQuizRecordsView();
     }
 }
