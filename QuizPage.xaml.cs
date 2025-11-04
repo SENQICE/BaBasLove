@@ -19,6 +19,7 @@ public partial class QuizPage : ContentPage
 {
     //题目与状态（保持原有字段)
     private readonly List<Vocab> _quizList;
+    private List<Vocab> _challengeSource; // 新增：挑战模式原始题库，用于无限循环
     private int _currentIndex =0;
     private int _hintCount =0;
     private const int MaxHints =3;
@@ -58,7 +59,10 @@ public partial class QuizPage : ContentPage
     // 新增：精确测量文本宽度用于定位光标
     private Label _measureLabel;
 
-    public QuizPage(Action<bool, int, int> onQuizRoundFinished, bool challengeMode = false)
+    // 新增：挑战模式失败词汇记录
+    private Vocab? _failedVocab;
+
+    public QuizPage(Action<bool, int, int> onQuizRoundFinished, bool challengeMode = false, IEnumerable<Vocab>? challengePool = null)
     {
         InitializeComponent();
         _onQuizRoundFinished = onQuizRoundFinished;
@@ -78,25 +82,73 @@ public partial class QuizPage : ContentPage
         _hintCount =0;
         _timerRunning = false;
         _isNavigatingAway = false;
+        _failedVocab = null;
 
-        // 按设置筛选题库，每个单元至少1题
-        var pool = VocabRepository.AllVocabs
-            .Where(v => selectedUnits.Any(su => su.book == v.Book && su.unit == v.Unit))
-            .ToList();
+        // 初始化题库
+        if (_challengeMode && challengePool != null)
+        {
+            // 挑战模式：使用传入的题库，不受家长设置控制；并保存源题库用于无限循环
+            _challengeSource = challengePool.ToList();
+            _quizList = new List<Vocab>(_challengeSource.Count);
+            AppendShuffledChallengePool(); //先填充一轮
+        }
+        else
+        {
+            // 普通/复习：按设置筛选题库，每个单元至少1题
+            var pool = VocabRepository.AllVocabs
+                .Where(v => selectedUnits.Any(su => su.book == v.Book && su.unit == v.Unit))
+                .ToList();
 
-        // 保证每个单元至少1题
-        var perUnit = selectedUnits
-            .Select(su => pool.Where(v => v.Book == su.book && v.Unit == su.unit).OrderBy(_ => Guid.NewGuid()).FirstOrDefault())
-            .Where(v => v != null)
-            .ToList();
+            // 保证每个单元至少1题
+            var perUnit = selectedUnits
+                .Select(su => pool.Where(v => v.Book == su.book && v.Unit == su.unit).OrderBy(_ => Guid.NewGuid()).FirstOrDefault())
+                .Where(v => v != null)
+                .ToList();
 
-        // 剩余题目随机补足
-        var rest = pool.Except(perUnit).OrderBy(_ => Guid.NewGuid()).Take(Math.Max(questionCount - perUnit.Count,0)).ToList();
-        _quizList = perUnit.Concat(rest).ToList();
+            // 剩余题目随机补足
+            var rest = pool.Except(perUnit!).OrderBy(_ => Guid.NewGuid()).Take(Math.Max(questionCount - perUnit.Count,0)).ToList();
+            _quizList = perUnit.Concat(rest).ToList()!;
+        }
 
         UpdateModeUI();
         ShowCurrentQuestion();
         StartCaretBlink();
+    }
+
+    private void AppendShuffledChallengePool()
+    {
+        if (_challengeSource == null || _challengeSource.Count ==0)
+        {
+            _challengeSource = VocabRepository.AllVocabs.ToList();
+        }
+        // 打乱一次
+        var shuffled = _challengeSource.OrderBy(_ => Guid.NewGuid()).ToList();
+
+        // 每10个正常词随机插入1个扩充包单词（若扩充包非空）
+        if (VocabRepository.ExtraVocabs != null && VocabRepository.ExtraVocabs.Count >0)
+        {
+            var mixed = new List<Vocab>(shuffled.Count + shuffled.Count /10 +4);
+            int countInGroup =0;
+            foreach (var v in shuffled)
+            {
+                mixed.Add(v);
+                countInGroup++;
+                if (countInGroup ==10)
+                {
+                    countInGroup =0;
+                    var extra = VocabRepository.ExtraVocabs[Random.Shared.Next(VocabRepository.ExtraVocabs.Count)];
+                    // 在最近的10个正常词范围内随机插入位置
+                    int start = Math.Max(0, mixed.Count -10);
+                    int insertPos = Random.Shared.Next(start, mixed.Count +1);
+                    mixed.Insert(insertPos, extra);
+                }
+            }
+            _quizList.AddRange(mixed);
+        }
+        else
+        {
+            _quizList.AddRange(shuffled);
+        }
     }
 
     private void StartCaretBlink()
@@ -189,12 +241,20 @@ public partial class QuizPage : ContentPage
         if (_isQuizFinished) return;
         if (_currentIndex >= _quizList.Count)
         {
-            _isQuizFinished = true;
-            if (_writtenMode)
-                await ShowSummaryAndScoreInput();
+            if (_challengeMode)
+            {
+                // 无限循环：追加一轮新的随机题目
+                AppendShuffledChallengePool();
+            }
             else
-                await ShowSummaryAndAutoFinish();
-            return;
+            {
+                _isQuizFinished = true;
+                if (_writtenMode)
+                    await ShowSummaryAndScoreInput();
+                else
+                    await ShowSummaryAndAutoFinish();
+                return;
+            }
         }
         var vocab = _quizList[_currentIndex];
         // 加入题号：如 "1.他们"
@@ -269,6 +329,8 @@ public partial class QuizPage : ContentPage
                 EnsureAnswerPlaceholder(_currentIndex);
                 if (_challengeMode)
                 {
+                    //记录失败词汇并结束挑战
+                    _failedVocab = _quizList[_currentIndex];
                     await EndChallenge(false, "时间到，挑战结束！");
                     return;
                 }
@@ -527,6 +589,8 @@ public partial class QuizPage : ContentPage
         {
             if (_challengeMode)
             {
+                //记录失败词汇并结束挑战
+                _failedVocab = vocab;
                 await EndChallenge(false, "答错一个单词，挑战结束！");
                 return;
             }
@@ -549,7 +613,7 @@ public partial class QuizPage : ContentPage
         PauseTimer();
         DetachWindowEvents();
         int score = _correctCount;
-        SaveChallengeRecord(score);
+        SaveChallengeRecord(score, _failedVocab, isUserExit, isSuccess: false);
         if (isUserExit)
         {
             Preferences.Set("QuizExitReason", "exit");
@@ -594,7 +658,7 @@ public partial class QuizPage : ContentPage
         {
             // 挑战模式不展示答案清单，直接记录并结束（视为成功通关）
             int score = _correctCount;
-            SaveChallengeRecord(score);
+            SaveChallengeRecord(score, null, isUserExit: false, isSuccess: true);
             int best = GetChallengeBest();
             await DisplayAlert("挑战完成", $"本次答对：{score} 个单词。\n最高纪录：{best} 个单词。", "确定");
             _onQuizRoundFinished?.Invoke(true, score, _quizList.Count);
@@ -628,7 +692,7 @@ public partial class QuizPage : ContentPage
         {
             // 挑战模式不手动录分，直接按当前得分记录
             int score = _correctCount;
-            SaveChallengeRecord(score);
+            SaveChallengeRecord(score, null, isUserExit: false, isSuccess: true);
             int best = GetChallengeBest();
             await DisplayAlert("挑战结束", $"本次答对：{score} 个单词。\n最高纪录：{best} 个单词。", "确定");
             _onQuizRoundFinished?.Invoke(true, score, _quizList.Count);
@@ -673,22 +737,41 @@ public partial class QuizPage : ContentPage
         Preferences.Set("QuizRecords", records);
     }
 
-    private record ChallengeRecord(DateTime Date, int CorrectCount);
+    // 挑战记录持久化模型（写入文件）
+    private class ChallengeRecordModel
+    {
+        public DateTime Date { get; set; }
+        public int CorrectCount { get; set; }
+        public string? FailedWord { get; set; }
+        public string? FailedMeaning { get; set; }
+        public string? FailedPhonetic { get; set; }
+        public bool IsExit { get; set; }
+        public bool IsSuccess { get; set; }
+    }
 
-    private void SaveChallengeRecord(int score)
+    private void SaveChallengeRecord(int score, Vocab? failed, bool isUserExit, bool isSuccess)
     {
         string file = Path.Combine(FileSystem.AppDataDirectory, "ChallengeRecords.json");
-        List<ChallengeRecord> all = new();
+        List<ChallengeRecordModel> all = new();
         if (File.Exists(file))
         {
             try
             {
                 var json = File.ReadAllText(file);
-                all = JsonSerializer.Deserialize<List<ChallengeRecord>>(json) ?? new();
+                all = JsonSerializer.Deserialize<List<ChallengeRecordModel>>(json) ?? new();
             }
             catch { }
         }
-        all.Insert(0, new ChallengeRecord(DateTime.Now, score));
+        all.Insert(0, new ChallengeRecordModel
+        {
+            Date = DateTime.Now,
+            CorrectCount = score,
+            FailedWord = failed?.Word,
+            FailedMeaning = failed?.Meaning,
+            FailedPhonetic = failed?.Phonetic,
+            IsExit = isUserExit,
+            IsSuccess = isSuccess
+        });
         File.WriteAllText(file, JsonSerializer.Serialize(all));
     }
 
@@ -699,8 +782,17 @@ public partial class QuizPage : ContentPage
         try
         {
             var json = File.ReadAllText(file);
-            var all = JsonSerializer.Deserialize<List<ChallengeRecord>>(json) ?? new();
-            return all.Count ==0 ? _correctCount : Math.Max(_correctCount, all.Max(r => r.CorrectCount));
+            //兼容旧版本：只取最大 CorrectCount
+            using var doc = JsonDocument.Parse(json);
+            int best =0;
+            foreach (var e in doc.RootElement.EnumerateArray())
+            {
+                if (e.TryGetProperty("CorrectCount", out var cc))
+                {
+                    best = Math.Max(best, cc.GetInt32());
+                }
+            }
+            return Math.Max(best, _correctCount);
         }
         catch { return _correctCount; }
     }

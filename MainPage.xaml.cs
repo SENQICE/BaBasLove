@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Microsoft.Maui.Controls;
 using System.IO;
 using System.Text.Json;
+using System.Linq;
 #if ANDROID
 using Android.Views;
 #endif
@@ -22,6 +23,12 @@ public partial class MainPage : ContentPage
     {
         public DateTime Date { get; set; }
         public int CorrectCount { get; set; }
+        //兼容扩展：失败词/是否成功/是否主动退出
+        public string? FailedWord { get; set; }
+        public string? FailedMeaning { get; set; }
+        public string? FailedPhonetic { get; set; }
+        public bool IsExit { get; set; }
+        public bool IsSuccess { get; set; }
     }
 
     //主题状态
@@ -285,7 +292,7 @@ public partial class MainPage : ContentPage
             //取消直接返回首页
             return;
         }
-        string realPwd = Preferences.Get("ParentPassword", "z123456");
+        string realPwd = Preferences.Get("ParentPassword", "123456");
         if (pwd == realPwd)
         {
             _stopTimer();
@@ -310,11 +317,36 @@ public partial class MainPage : ContentPage
 
     private async void OnChallengeModeClicked(object sender, EventArgs e)
     {
-        // 新增：挑战模式入口
+        // 挑战模式：不受家长设置控制，先选择知识上限（年级+学期），然后从三上到所选上限含）构建题库。
         if (sender is Button b) b.IsEnabled = false;
-        WelcomeLabel.Text = "挑战开始，加油！";
-        await Application.Current.MainPage.Navigation.PushModalAsync(new QuizPage(OnQuizRoundFinished, challengeMode: true));
-        if (sender is Button b2) b2.IsEnabled = true;
+        try
+        {
+            var levels = new[]
+            {
+                "三年级上册","三年级下册",
+                "四年级上册","四年级下册",
+                "五年级上册","五年级下册",
+                "六年级上册","六年级下册"
+            };
+            string choice = await DisplayActionSheet("选择知识上限", "取消", null, levels);
+            if (string.IsNullOrEmpty(choice) || choice == "取消") return;
+
+            int idx = Array.IndexOf(levels, choice);
+            if (idx <0) idx = levels.Length -1;
+            var allowed = levels.Take(idx +1).ToHashSet();
+            var pool = VocabRepository.AllVocabs.Where(v => allowed.Contains(v.Book)).ToList();
+            if (pool.Count ==0)
+            {
+                await DisplayAlert("提示", "未找到匹配的单词题库", "确定");
+                return;
+            }
+            WelcomeLabel.Text = $"挑战开始（上限：{choice}），加油！";
+            await Application.Current.MainPage.Navigation.PushModalAsync(new QuizPage(OnQuizRoundFinished, challengeMode: true, challengePool: pool));
+        }
+        finally
+        {
+            if (sender is Button b2) b2.IsEnabled = true;
+        }
     }
 
     private async void OnReviewModeClicked(object sender, EventArgs e)
@@ -396,7 +428,7 @@ public partial class MainPage : ContentPage
     {
         QuizRecordsLayout.Children.Clear();
 
-        // 展示挑战模式记录（仅摘要，不含试卷内容）——按历史最高纪录显示
+        // 展示挑战模式记录（含失败词详情）——按历史最高纪录显示
         try
         {
             string cfile = Path.Combine(FileSystem.AppDataDirectory, "ChallengeRecords.json");
@@ -413,15 +445,34 @@ public partial class MainPage : ContentPage
                         best = cr[k].CorrectCount;
                 }
 
-                // 再渲染每条记录，统一显示历史最高
+                // 再渲染每条记录
                 for (int i =0; i < cr.Count; i++)
                 {
                     var r = cr[i];
+                    string title = r.IsSuccess ?
+                        $"[挑战] 第{cr.Count - i}次：通关，答对{r.CorrectCount}个（最高{best}）" :
+                        $"[挑战] 第{cr.Count - i}次：失败，答对{r.CorrectCount}个（最高{best}）";
                     var lbl = new Label
                     {
-                        Text = $"[挑战] 第{cr.Count - i}次：答对{r.CorrectCount}个单词（最高纪录{best}）",
+                        Text = title,
                         FontSize =16
                     };
+
+                    //详情弹窗：显示失败词（若有）
+                    var tap = new TapGestureRecognizer();
+                    tap.Tapped += async (s, e) =>
+                    {
+                        if (r.IsSuccess || string.IsNullOrWhiteSpace(r.FailedWord))
+                        {
+                            await DisplayAlert("挑战详情", $"本次答对：{r.CorrectCount} 个单词。", "关闭");
+                        }
+                        else
+                        {
+                            string failed = $"失败单词：{r.FailedMeaning}\n英文：{r.FailedWord}\n音标：{(string.IsNullOrWhiteSpace(r.FailedPhonetic) ? "(无)" : r.FailedPhonetic)}";
+                            await DisplayAlert("挑战失败详情", failed, "关闭");
+                        }
+                    };
+                    lbl.GestureRecognizers.Add(tap);
                     QuizRecordsLayout.Children.Add(lbl);
                 }
             }
@@ -462,6 +513,7 @@ public partial class MainPage : ContentPage
 #if ANDROID
         App.SetStatusBarBlackText();
 #endif
+
         // 返回首页刷新记录
         UpdateQuizRecordsView();
     }
