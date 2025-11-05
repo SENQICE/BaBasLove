@@ -14,6 +14,8 @@ public partial class App : Application
     private int _usageSeconds = 0;
     private const int LimitSeconds = 600; // 10分钟
     private bool _needQuiz = false; // 标志：是否需要弹出答题界面
+    private bool _isNavigatingToQuiz = false; // 防重复导航
+    private DateTime _lastQuizShown = DateTime.MinValue; // 新增：节流，防止短时间二次弹窗
 
     public App()
     {
@@ -153,13 +155,28 @@ public partial class App : Application
 
     private void CheckAndShowQuiz()
     {
-        if (_needQuiz)
+        if (!_needQuiz) return;
+        if (_isNavigatingToQuiz) return;
+        //2 秒节流，避免重复弹出
+        if ((DateTime.Now - _lastQuizShown).TotalSeconds < 2) return;
+        var nav = Application.Current?.MainPage?.Navigation;
+        if (nav?.ModalStack?.Any(p => p is QuizPage) == true) return; // 已在测验页
+
+        _isNavigatingToQuiz = true;
+        _needQuiz = false; // 消费标志
+        _lastQuizShown = DateTime.Now;
+        MainThread.BeginInvokeOnMainThread(async () =>
         {
-            MainThread.BeginInvokeOnMainThread(() =>
+            try
             {
-                Application.Current.MainPage.Navigation.PushModalAsync(new QuizPage(OnQuizRoundFinished));
-            });
-        }
+                if (Application.Current?.MainPage?.Navigation != null)
+                {
+                    await Application.Current.MainPage.Navigation.PushModalAsync(new QuizPage(OnQuizRoundFinished));
+                }
+            }
+            catch { _needQuiz = true; }
+            finally { _isNavigatingToQuiz = false; }
+        });
     }
 
     private void StartUsageTimer()
@@ -176,10 +193,7 @@ public partial class App : Application
             if (_usageSeconds >= LimitSeconds)
             {
                 _needQuiz = true;
-                MainThread.BeginInvokeOnMainThread(() =>
-                {
-                    Application.Current.MainPage.Navigation.PushModalAsync(new QuizPage(OnQuizRoundFinished));
-                });
+                MainThread.BeginInvokeOnMainThread(CheckAndShowQuiz); //统一入口
                 _usageTimer.Stop();
             }
         };
@@ -193,13 +207,20 @@ public partial class App : Application
 
     private void OnQuizRoundFinished(bool isSuccess, int correctCount, int totalCount)
     {
-        // 只有闯关成功才重置计时
+        //退出试卷后，先停表，避免误触发
+        StopUsageTimer();
+
+        //只有闯关成功才重置计时并重启
         if (isSuccess)
         {
             _usageSeconds = 0;
             _needQuiz = false;
             StartUsageTimer();
         }
-        // 你可以根据 correctCount/totalCount 做更多处理
+        else
+        {
+            //失败或退出：记录已消费，不立刻重开，等待再次达到时长阈值
+            _needQuiz = false;
+        }
     }
 }

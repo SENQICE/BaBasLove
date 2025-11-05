@@ -54,11 +54,21 @@
  Margin="0,10,0,10"
  BackgroundColor="{DynamicResource AppColorButtonBackground}" TextColor="{DynamicResource AppColorButtonText}"/>
 
- <!-- 提示按钮：右侧对齐，和控制行高度一致 -->
- <Button x:Name="HintButton" Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="3"
+ <!-- 操作条：左侧方向键按钮（拖动移动光标），右侧提示/退出按钮；与键盘之间留出间距，左右与键盘 Padding 一致 -->
+ <Grid Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="3" ColumnDefinitions="Auto,*,Auto" Margin="8,0,8,6">
+ <Button x:Name="ArrowButton" Grid.Column="0" Text="&lt;- -&gt;" FontSize="18" HorizontalOptions="Start" VerticalOptions="Center"
+ HeightRequest="44"
+ BackgroundColor="{DynamicResource AppColorKeyBackground}" TextColor="{DynamicResource AppColorKeyText}">
+ <Button.GestureRecognizers>
+ <PanGestureRecognizer PanUpdated="OnArrowPanUpdated"/>
+ </Button.GestureRecognizers>
+ </Button>
+ <BoxView Grid.Column="1" WidthRequest="0"/>
+ <Button x:Name="HintButton" Grid.Column="2"
  Text="提示" FontSize="18" HorizontalOptions="End" VerticalOptions="Center"
  Clicked="OnHintClicked" HeightRequest="44" WidthRequest="90"
- BackgroundColor="{DynamicResource AppColorKeyBackground}" TextColor="{DynamicResource AppColorKeyText}" Margin="0,0,10,0"/>
+ BackgroundColor="{DynamicResource AppColorKeyBackground}" TextColor="{DynamicResource AppColorKeyText}"/>
+ </Grid>
 
  <!-- 自定义虚拟键盘（普通模式可见） -->
  <Grid x:Name="VirtualKeyboardGrid" Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="3"
@@ -115,19 +125,16 @@
  <!-- 第四行 控制键：大小写/空格/./退格 =2:4:2:2 -->
  <Grid Grid.Row="3" ColumnSpacing="8" ColumnDefinitions="2*,4*,2*,2*">
  <Button x:Name="ShiftButton" Text="小写" Clicked="OnShiftClicked" Grid.Column="0" HorizontalOptions="Fill"/>
- <Button x:Name="SpaceButton" Text="空格" Clicked="OnSpaceClicked" Grid.Column="1" HorizontalOptions="Fill">
- <Button.GestureRecognizers>
- <PanGestureRecognizer PanUpdated="OnSpacePanUpdated"/>
- </Button.GestureRecognizers>
- </Button>
+ <Button x:Name="SpaceButton" Text="空格" Clicked="OnSpaceClicked" Grid.Column="1" HorizontalOptions="Fill"/>
  <Button ClassId="Letter" Text="." Clicked="OnKeyButtonClicked" Grid.Column="2" HorizontalOptions="Fill"/>
  <Button Text="退格" Clicked="OnBackspaceClicked" Grid.Column="3" HorizontalOptions="Fill"/>
  </Grid>
  </Grid>
 
- <!-- 音标显示（仅笔答模式提示后显示） -->
- <Label x:Name="PhoneticLabel" Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="3"
- FontSize="22" TextColor="DarkBlue" HorizontalOptions="Center" VerticalOptions="Center"
- IsVisible="False"/>
+ <!-- 底部信息区域：音标与挑战层次/范围等提示 -->
+ <VerticalStackLayout Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="3" Spacing="4" HorizontalOptions="Center" VerticalOptions="Center" Margin="0,2">
+ <Label x:Name="PhoneticLabel" FontSize="22" TextColor="DarkBlue" HorizontalOptions="Center" VerticalOptions="Center" IsVisible="False"/>
+ <Label x:Name="FooterMetaLabel" FontSize="16" TextColor="{DynamicResource AppColorTextSecondary}" HorizontalOptions="Center" IsVisible="False"/>
+ </VerticalStackLayout>
  </Grid>
 </ContentPage>

@@ -29,6 +29,7 @@ public partial class MainPage : ContentPage
         public string? FailedPhonetic { get; set; }
         public bool IsExit { get; set; }
         public bool IsSuccess { get; set; }
+        public string? Level { get; set; } // 新增：挑战层次
     }
 
     //主题状态
@@ -111,6 +112,7 @@ public partial class MainPage : ContentPage
         public int CorrectCount { get; set; }
         public int TotalCount { get; set; }
         public bool IsSuccess { get; set; }
+        public string? RangeText { get; set; } // 新增：范围
     }
 
     // 心灵鸡汤（已替换）
@@ -176,6 +178,9 @@ public partial class MainPage : ContentPage
         "做最棒的自己，就是最大的成功。",
         "记住，你永远被爱着，也被期待着。"
     };
+
+    // 防止重复导航进入 QuizPage
+    private bool _isNavigatingToQuiz;
 
     public MainPage(Action startTimer, Action stopTimer)
     {
@@ -308,16 +313,31 @@ public partial class MainPage : ContentPage
         }
     }
 
-    private void OnSonModeClicked(object sender, EventArgs e)
+    // 修复：防止在切到后台再回来时重复打开儿子模式
+    private async void OnSonModeClicked(object sender, EventArgs e)
     {
-        SonModeButton.IsEnabled = false;
-        WelcomeLabel.Text = "你已经进入儿子模式！";
-        Application.Current.MainPage.Navigation.PushModalAsync(new QuizPage(OnQuizRoundFinished));
+        if (_isNavigatingToQuiz) return;
+        // 若已存在 QuizPage，则不再重复进入
+        if (Application.Current?.MainPage?.Navigation?.ModalStack?.Any(p => p is QuizPage) == true)
+            return;
+
+        _isNavigatingToQuiz = true;
+        try
+        {
+            SonModeButton.IsEnabled = false;
+            WelcomeLabel.Text = "你已经进入儿子模式！";
+            await Application.Current.MainPage.Navigation.PushModalAsync(new QuizPage(OnQuizRoundFinished));
+        }
+        finally
+        {
+            // 即使被系统打断返回前台，也不会重复进入
+            _isNavigatingToQuiz = false;
+        }
     }
 
     private async void OnChallengeModeClicked(object sender, EventArgs e)
     {
-        // 挑战模式：不受家长设置控制，先选择知识上限（年级+学期），然后从三上到所选上限含）构建题库。
+        // 挑战模式：先选择知识上限（年级+学期），从三上到所选上限构建题库
         if (sender is Button b) b.IsEnabled = false;
         try
         {
@@ -341,7 +361,7 @@ public partial class MainPage : ContentPage
                 return;
             }
             WelcomeLabel.Text = $"挑战开始（上限：{choice}），加油！";
-            await Application.Current.MainPage.Navigation.PushModalAsync(new QuizPage(OnQuizRoundFinished, challengeMode: true, challengePool: pool));
+            await Application.Current.MainPage.Navigation.PushModalAsync(new QuizPage(OnQuizRoundFinished, challengeMode: true, challengePool: pool, challengeLevel: choice));
         }
         finally
         {
@@ -424,11 +444,20 @@ public partial class MainPage : ContentPage
         }
     }
 
+    private sealed class UnifiedHistoryItem
+    {
+        public DateTime Date { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public Action? OnTap { get; set; }
+    }
+
     private void UpdateQuizRecordsView()
     {
         QuizRecordsLayout.Children.Clear();
 
-        // 展示挑战模式记录（含失败词详情）——按历史最高纪录显示
+        var unified = new List<UnifiedHistoryItem>();
+
+        // 挑战模式记录
         try
         {
             string cfile = Path.Combine(FileSystem.AppDataDirectory, "ChallengeRecords.json");
@@ -436,67 +465,76 @@ public partial class MainPage : ContentPage
             {
                 var json = File.ReadAllText(cfile);
                 var cr = JsonSerializer.Deserialize<List<ChallengeRecord>>(json) ?? new();
-
-                // 历史最高纪录：先计算一次
                 int best =0;
-                for (int k =0; k < cr.Count; k++)
-                {
-                    if (cr[k].CorrectCount > best)
-                        best = cr[k].CorrectCount;
-                }
-
-                // 再渲染每条记录
+                for (int k =0; k < cr.Count; k++) if (cr[k].CorrectCount > best) best = cr[k].CorrectCount;
                 for (int i =0; i < cr.Count; i++)
                 {
                     var r = cr[i];
-                    string title = r.IsSuccess ?
-                        $"[挑战] 第{cr.Count - i}次：通关，答对{r.CorrectCount}个（最高{best}）" :
-                        $"[挑战] 第{cr.Count - i}次：失败，答对{r.CorrectCount}个（最高{best}）";
-                    var lbl = new Label
+                    // 列表项显示格式：挑战：[挑战] 答对x个 (历史最高X个)
+                    var title = $"[挑战] 答对{r.CorrectCount}个 (历史最高{best}个)";
+                    var item = new UnifiedHistoryItem
                     {
-                        Text = title,
-                        FontSize =16
-                    };
+                        Date = r.Date,
+                        Title = title,
+                        OnTap = async () =>
+                        {
+                            //详情标题需带时间
+                            string titleText = r.IsSuccess || string.IsNullOrWhiteSpace(r.FailedWord)
+                                ? $"挑战详情（{r.Date:yyyy-MM-dd HH:mm}）"
+                                : $"挑战失败详情（{r.Date:yyyy-MM-dd HH:mm}）";
 
-                    //详情弹窗：显示失败词（若有）
-                    var tap = new TapGestureRecognizer();
-                    tap.Tapped += async (s, e) =>
-                    {
-                        if (r.IsSuccess || string.IsNullOrWhiteSpace(r.FailedWord))
-                        {
-                            await DisplayAlert("挑战详情", $"本次答对：{r.CorrectCount} 个单词。", "关闭");
-                        }
-                        else
-                        {
-                            string failed = $"失败单词：{r.FailedMeaning}\n英文：{r.FailedWord}\n音标：{(string.IsNullOrWhiteSpace(r.FailedPhonetic) ? "(无)" : r.FailedPhonetic)}";
-                            await DisplayAlert("挑战失败详情", failed, "关闭");
+                            if (r.IsSuccess || string.IsNullOrWhiteSpace(r.FailedWord))
+                            {
+                                var info = string.IsNullOrWhiteSpace(r.Level)
+                                    ? $"本次答对：{r.CorrectCount} 个单词。"
+                                    : $"本次答对：{r.CorrectCount} 个单词。\n挑战层次：{r.Level}";
+                                await DisplayAlert(titleText, info, "关闭");
+                            }
+                            else
+                            {
+                                string failed = $"失败单词：{r.FailedMeaning}\n英文：{r.FailedWord}\n音标：{(string.IsNullOrWhiteSpace(r.FailedPhonetic) ? "(无)" : r.FailedPhonetic)}";
+                                if (!string.IsNullOrWhiteSpace(r.Level)) failed += $"\n挑战层次：{r.Level}";
+                                await DisplayAlert(titleText, failed, "关闭");
+                            }
                         }
                     };
-                    lbl.GestureRecognizers.Add(tap);
-                    QuizRecordsLayout.Children.Add(lbl);
+                    unified.Add(item);
                 }
             }
         }
         catch { }
 
-        // 普通模式历史：显示全部（外层 ScrollView 可滑动）
+        // 普通模式历史
         LoadQuizHistories();
-        int showCount = _quizHistories.Count; // 显示全部
-        for (int i =0; i < showCount; i++)
+        int totalAttempts = _quizHistories.Count;
+        for (int i =0; i < _quizHistories.Count; i++)
         {
             var h = _quizHistories[i];
-            string text = $"第{_quizHistories.Count - i}次 闯关：答对{h.CorrectCount}个单词。";
-            if (h.IsSuccess && h.CorrectCount == h.TotalCount)
-                text += "全部正确！";
-            var label = new Label { Text = text, FontSize =16 };
-            int historyIndex = i;
-            var tapGesture = new TapGestureRecognizer();
-            tapGesture.Tapped += async (s, e) =>
+            int attempt = totalAttempts - i; // 第xx次（按时间先后）
+            // 列表项显示格式：儿子模式[闯关] [第xx次] 答对x个(共x个)
+            string text = $"[闯关] [第{attempt}次] 答对{h.CorrectCount}个(共{h.TotalCount}个)";
+            var item = new UnifiedHistoryItem
             {
-                string detail = string.Join("\n", h.Meanings.Select((m, idx) => $"{idx +1}. 【{m}】\n标准答案: {h.Answers[idx]}\n你的答案: {(idx < h.UserAnswers.Count ? h.UserAnswers[idx] : "(未作答)")}"));
-                await DisplayAlert($"第{_quizHistories.Count - historyIndex}次考试详情", detail, "关闭");
+                Date = h.Date,
+                Title = text,
+                OnTap = async () =>
+                {
+                    string detail = string.Join("\n", h.Meanings.Select((m, idx) => $"{idx +1}. 【{m}】\n标准答案: {h.Answers[idx]}\n你的答案: {(idx < h.UserAnswers.Count ? h.UserAnswers[idx] : "(未作答)")}"));
+                    if (!string.IsNullOrWhiteSpace(h.RangeText)) detail += $"\n\n{h.RangeText}"; // 范围追加在最底部
+                    //详情标题需带时间
+                    await DisplayAlert($"闯关详情（{h.Date:yyyy-MM-dd HH:mm}）", detail, "关闭");
+                }
             };
-            label.GestureRecognizers.Add(tapGesture);
+            unified.Add(item);
+        }
+
+        // 按时间倒序显示，但不显示时间文本
+        foreach (var item in unified.OrderByDescending(x => x.Date))
+        {
+            var label = new Label { Text = item.Title, FontSize =16 };
+            var tap = new TapGestureRecognizer();
+            tap.Tapped += async (s, e) => { if (item.OnTap != null) await MainThread.InvokeOnMainThreadAsync(() => item.OnTap()); };
+            label.GestureRecognizers.Add(tap);
             QuizRecordsLayout.Children.Add(label);
         }
     }

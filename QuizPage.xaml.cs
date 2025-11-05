@@ -19,7 +19,7 @@ public partial class QuizPage : ContentPage
 {
     //题目与状态（保持原有字段)
     private readonly List<Vocab> _quizList;
-    private List<Vocab> _challengeSource; // 新增：挑战模式原始题库，用于无限循环
+    private List<Vocab> _challengeSource; // 挑战模式原始题库，用于无限循环
     private int _currentIndex =0;
     private int _hintCount =0;
     private const int MaxHints =3;
@@ -31,7 +31,7 @@ public partial class QuizPage : ContentPage
     private CancellationTokenSource _cts;
     private bool _isQuizFinished = false;
     private bool _writtenMode = false;
-    private bool _challengeMode = false; // 新增：挑战模式
+    private bool _challengeMode = false; // 挑战模式
     private int _totalHintCount =0;
     private HashSet<int> _wrongIndexes = new();
     private const int MaxWrongWords =4;
@@ -50,23 +50,32 @@ public partial class QuizPage : ContentPage
     private double _panStartX;
     private int _panStartCaret;
 
-    // 新增：倒计时可暂停/恢复
+    // 倒计时可暂停/恢复
     private int _remainingSeconds;
     private bool _timerRunning;
     private bool _windowEventsAttached;
     private bool _isNavigatingAway;
+    private bool _confirmingExit; // 防抖：返回确认中
 
-    // 新增：精确测量文本宽度用于定位光标
+    // 精确测量文本宽度用于定位光标
     private Label _measureLabel;
 
-    // 新增：挑战模式失败词汇记录
+    // 挑战模式失败词汇记录
     private Vocab? _failedVocab;
 
-    public QuizPage(Action<bool, int, int> onQuizRoundFinished, bool challengeMode = false, IEnumerable<Vocab>? challengePool = null)
+    //方向键拖动起点
+    private double _arrowPanStartX;
+    private int _arrowPanStartCaret;
+
+    // 新增：挑战层次展示（如 六年级上册）
+    private readonly string? _challengeLevel;
+
+    public QuizPage(Action<bool, int, int> onQuizRoundFinished, bool challengeMode = false, IEnumerable<Vocab>? challengePool = null, string? challengeLevel = null)
     {
         InitializeComponent();
         _onQuizRoundFinished = onQuizRoundFinished;
         _challengeMode = challengeMode;
+        _challengeLevel = challengeLevel;
 
         //读取设置
         var selectedUnits = SettingsPage.GetSelectedUnits();
@@ -82,12 +91,23 @@ public partial class QuizPage : ContentPage
         _hintCount =0;
         _timerRunning = false;
         _isNavigatingAway = false;
+        _confirmingExit = false;
         _failedVocab = null;
+
+        //让方向键宽度与空格键一致
+        SpaceButton.SizeChanged += (_, __) =>
+        {
+            if (SpaceButton.Width >0)
+            {
+                // 增加原来一半的长度（1.5 倍）
+                ArrowButton.WidthRequest = SpaceButton.Width *1.5;
+            }
+        };
 
         // 初始化题库
         if (_challengeMode && challengePool != null)
         {
-            // 挑战模式：使用传入的题库，不受家长设置控制；并保存源题库用于无限循环
+            // 挑战模式：使用传入的题库；并保存源题库用于无限循环
             _challengeSource = challengePool.ToList();
             _quizList = new List<Vocab>(_challengeSource.Count);
             AppendShuffledChallengePool(); //先填充一轮
@@ -221,17 +241,29 @@ public partial class QuizPage : ContentPage
             VirtualKeyboardGrid.IsVisible = true;
         }
 
-        // 挑战模式下：提示按钮作为退出按钮
+        // 挑战模式下：提示按钮作为退出按钮；底部显示挑战层次
         if (HintButton != null)
         {
             if (_challengeMode)
             {
                 HintButton.IsVisible = true;
                 HintButton.Text = "退出";
+                HintButton.IsEnabled = true; // 确保可点
+                if (FooterMetaLabel != null)
+                {
+                    FooterMetaLabel.IsVisible = !string.IsNullOrWhiteSpace(_challengeLevel);
+                    if (FooterMetaLabel.IsVisible)
+                        FooterMetaLabel.Text = $"挑战层次：{_challengeLevel}";
+                }
             }
             else
             {
                 HintButton.Text = "提示";
+                if (FooterMetaLabel != null)
+                {
+                    FooterMetaLabel.IsVisible = false;
+                    FooterMetaLabel.Text = string.Empty;
+                }
             }
         }
     }
@@ -262,7 +294,17 @@ public partial class QuizPage : ContentPage
         FeedbackLabel.Text = string.Empty;
         _hintCount =0;
         _submitCount =0;
-        HintButton.IsEnabled = !_writtenMode && !_challengeMode && _totalHintCount < MaxHints;
+        if (_challengeMode)
+        {
+            // 挑战模式使用退出按钮，始终可用
+            HintButton.IsVisible = true;
+            HintButton.Text = "退出";
+            HintButton.IsEnabled = true;
+        }
+        else
+        {
+            HintButton.IsEnabled = !_writtenMode && _totalHintCount < MaxHints;
+        }
         PhoneticLabel.IsVisible = false; // 切题时隐藏音标
 
         SetText(string.Empty,0);
@@ -394,6 +436,19 @@ public partial class QuizPage : ContentPage
     {
         // 回到前台时恢复计时（两种模式一致）
         ResumeTimerIfNeeded();
+        //保险：挑战模式回到前台时确保退出按钮可点和层次显示
+        if (_challengeMode)
+        {
+            HintButton.IsVisible = true;
+            HintButton.IsEnabled = true;
+            HintButton.Text = "退出";
+            if (FooterMetaLabel != null)
+            {
+                FooterMetaLabel.IsVisible = !string.IsNullOrWhiteSpace(_challengeLevel);
+                if (FooterMetaLabel.IsVisible)
+                    FooterMetaLabel.Text = $"挑战层次：{_challengeLevel}";
+            }
+        }
     }
 
     private void OnWindowDeactivated(object sender, EventArgs e)
@@ -520,28 +575,49 @@ public partial class QuizPage : ContentPage
 
     private void OnSpacePanUpdated(object sender, PanUpdatedEventArgs e)
     {
-        switch (e.StatusType)
-        {
-            case GestureStatus.Started:
-                _panStartX = e.TotalX; _panStartCaret = _caret; break;
-            case GestureStatus.Running:
-                var dx = e.TotalX - _panStartX; int step = (int)(dx /20); _caret = Math.Clamp(_panStartCaret + step,0, _text.Length); UpdateInputVisual(); break;
-        }
+        // 已取消空格键拖动功能
     }
     private async void OnSpaceClicked(object sender, EventArgs e)
     { if (_writtenMode) return; if (sender is Button b) await PressVisual(b); InsertAtCaret(" "); }
+
     private async void OnBackspaceClicked(object sender, EventArgs e)
     { if (_writtenMode) return; if (sender is Button b) await PressVisual(b); BackspaceAtCaret(); }
 
-    private void OnHintClicked(object sender, EventArgs e)
+    private void OnArrowPanUpdated(object sender, PanUpdatedEventArgs e)
     {
-        if (_isQuizFinished) return;
+        switch (e.StatusType)
+        {
+            case GestureStatus.Started:
+                _arrowPanStartX = e.TotalX;
+                _arrowPanStartCaret = _caret;
+                break;
+            case GestureStatus.Running:
+                var dx = e.TotalX - _arrowPanStartX;
+                int step = (int)(dx /20); // 与原来空格键一致手感
+                _caret = Math.Clamp(_arrowPanStartCaret + step,0, _text.Length);
+                UpdateInputVisual();
+                break;
+        }
+    }
+
+    private async void OnHintClicked(object sender, EventArgs e)
+    {
+        // 挑战模式：增加『是否结束挑战？』确认
         if (_challengeMode)
         {
-            // 挑战模式下，提示按钮作为退出
+            if (_isNavigatingAway) return;
+            bool confirm = false;
+            try
+            {
+                confirm = await DisplayAlert("提示", "是否结束挑战？", "是", "否");
+            }
+            catch { /* 若在后台，DisplayAlert可能失败，直接当否处理 */ }
+            if (!confirm) return;
             _ = EndChallenge(true, "已退出挑战");
             return;
         }
+
+        if (_isQuizFinished) return;
         var vocab = _quizList[_currentIndex];
         if (_writtenMode)
         {
@@ -607,7 +683,7 @@ public partial class QuizPage : ContentPage
 
     private async Task EndChallenge(bool isUserExit, string message)
     {
-        if (_isQuizFinished || _isNavigatingAway) return;
+        if (_isNavigatingAway) return;
         _isQuizFinished = true;
         _isNavigatingAway = true;
         PauseTimer();
@@ -619,18 +695,35 @@ public partial class QuizPage : ContentPage
             Preferences.Set("QuizExitReason", "exit");
         }
         int best = GetChallengeBest();
-        await MainThread.InvokeOnMainThreadAsync(async () =>
+
+        // 无论是否能弹出提示，都要退出页面
+        try
         {
-            await DisplayAlert("挑战结束", $"{message}\n本次答对：{score} 个单词。\n最高纪录：{best} 个单词。", "确定");
+            await MainThread.InvokeOnMainThreadAsync(async () =>
+            {
+                try
+                {
+                    var extra = string.IsNullOrWhiteSpace(_challengeLevel) ? string.Empty : $"\n挑战层次：{_challengeLevel}";
+                    await DisplayAlert("挑战结束", $"{message}\n本次答对：{score} 个单词。\n最高纪录：{best} 个单词。{extra}", "确定");
+                }
+                catch { /* 忽略因切到后台导致的弹窗异常 */ }
+                _onQuizRoundFinished?.Invoke(false, score, _quizList.Count);
+                if (Navigation.ModalStack.Contains(this))
+                    await Navigation.PopModalAsync();
+            });
+        }
+        catch
+        {
+            // 如果主线程弹窗失败，也直接回到首页
             _onQuizRoundFinished?.Invoke(false, score, _quizList.Count);
             if (Navigation.ModalStack.Contains(this))
                 await Navigation.PopModalAsync();
-        });
+        }
     }
 
     private async Task FailAndExit(string message)
     {
-        if (_isQuizFinished || _isNavigatingAway) return;
+        if (_isNavigatingAway) return;
         _isQuizFinished = true;
         _isNavigatingAway = true;
         PauseTimer();
@@ -660,7 +753,8 @@ public partial class QuizPage : ContentPage
             int score = _correctCount;
             SaveChallengeRecord(score, null, isUserExit: false, isSuccess: true);
             int best = GetChallengeBest();
-            await DisplayAlert("挑战完成", $"本次答对：{score} 个单词。\n最高纪录：{best} 个单词。", "确定");
+            var extra = string.IsNullOrWhiteSpace(_challengeLevel) ? string.Empty : $"\n挑战层次：{_challengeLevel}";
+            await DisplayAlert("挑战完成", $"本次答对：{score} 个单词。\n最高纪录：{best} 个单词。{extra}", "确定");
             _onQuizRoundFinished?.Invoke(true, score, _quizList.Count);
             DetachWindowEvents();
             await Navigation.PopModalAsync();
@@ -680,7 +774,9 @@ public partial class QuizPage : ContentPage
         int score2 = _correctCount;
         SaveQuizRecord(score2);
         SaveQuizHistory(score2);
-        await DisplayAlert("成绩", $"本次已自动判卷：答对 {score2}/{_quizList.Count} 个单词。", "确定");
+        var rangeText = BuildSelectedRangeText();
+        var tail = string.IsNullOrEmpty(rangeText) ? string.Empty : $"\n{rangeText}";
+        await DisplayAlert("成绩", $"本次已自动判卷：答对 {score2}/{_quizList.Count} 个单词。{tail}", "确定");
         _onQuizRoundFinished?.Invoke(true, score2, _quizList.Count);
         DetachWindowEvents();
         await Navigation.PopModalAsync();
@@ -694,7 +790,8 @@ public partial class QuizPage : ContentPage
             int score = _correctCount;
             SaveChallengeRecord(score, null, isUserExit: false, isSuccess: true);
             int best = GetChallengeBest();
-            await DisplayAlert("挑战结束", $"本次答对：{score} 个单词。\n最高纪录：{best} 个单词。", "确定");
+            var extra = string.IsNullOrWhiteSpace(_challengeLevel) ? string.Empty : $"\n挑战层次：{_challengeLevel}";
+            await DisplayAlert("挑战结束", $"本次答对：{score} 个单词。\n最高纪录：{best} 个单词。{extra}", "确定");
             _onQuizRoundFinished?.Invoke(true, score, _quizList.Count);
             DetachWindowEvents();
             await Navigation.PopModalAsync();
@@ -707,7 +804,7 @@ public partial class QuizPage : ContentPage
         HintButton.IsVisible = false;
         TimerLabel.Text = "";
 
-        // 展示所有题目和答案
+        // 展示所有单词和答案
         var summary = string.Join(Environment.NewLine, _quizList.Select((v, i) => $"{i +1}. {v.Meaning} - {v.Word}"));
         await DisplayAlert("所有单词与答案", summary, "判卷");
 
@@ -721,9 +818,37 @@ public partial class QuizPage : ContentPage
         SaveQuizRecord(score3);
         await DisplayAlert("成绩已保存", $"本次答对：{score3}个单词！", "确定");
         SaveQuizHistory(score3);
+        var rangeText2 = BuildSelectedRangeText();
+        if (!string.IsNullOrEmpty(rangeText2))
+        {
+            await DisplayAlert("范围", rangeText2, "关闭");
+        }
         _onQuizRoundFinished?.Invoke(true, score3, _quizList.Count);
         DetachWindowEvents();
         await Navigation.PopModalAsync();
+    }
+
+    private string BuildSelectedRangeText()
+    {
+        // 从已生成的题库中反推范围：按 Book+Unit 去重
+        var pairs = _quizList
+            .Select(v => (Book: v.Book, Unit: v.Unit))
+            .Distinct()
+            .OrderBy(p => p.Book)
+            .ThenBy(p => p.Unit)
+            .ToList();
+        if (pairs.Count ==0) return string.Empty;
+        var sb = new StringBuilder();
+        sb.Append("范围：");
+        // 每项换行（首项直接跟随，不额外前缀）
+        for (int i =0; i < pairs.Count; i++)
+        {
+            if (i ==0)
+                sb.Append($"{pairs[i].Book}-{pairs[i].Unit}");
+            else
+                sb.Append($"\n{pairs[i].Book}-{pairs[i].Unit}");
+        }
+        return sb.ToString();
     }
 
     private void SaveQuizRecord(int score)
@@ -747,6 +872,7 @@ public partial class QuizPage : ContentPage
         public string? FailedPhonetic { get; set; }
         public bool IsExit { get; set; }
         public bool IsSuccess { get; set; }
+        public string? Level { get; set; } // 新增：挑战层次
     }
 
     private void SaveChallengeRecord(int score, Vocab? failed, bool isUserExit, bool isSuccess)
@@ -770,7 +896,8 @@ public partial class QuizPage : ContentPage
             FailedMeaning = failed?.Meaning,
             FailedPhonetic = failed?.Phonetic,
             IsExit = isUserExit,
-            IsSuccess = isSuccess
+            IsSuccess = isSuccess,
+            Level = _challengeLevel
         });
         File.WriteAllText(file, JsonSerializer.Serialize(all));
     }
@@ -807,7 +934,8 @@ public partial class QuizPage : ContentPage
             UserAnswers = _userAnswers,
             CorrectCount = score,
             TotalCount = _quizList.Count,
-            IsSuccess = score == _quizList.Count
+            IsSuccess = score == _quizList.Count,
+            RangeText = BuildSelectedRangeText()
         };
         string file = Path.Combine(FileSystem.AppDataDirectory, "QuizHistory.json");
         List<QuizHistory> all = new();
@@ -824,55 +952,50 @@ public partial class QuizPage : ContentPage
         File.WriteAllText(file, JsonSerializer.Serialize(all));
     }
 
-    protected override void OnAppearing()
-    {
-        base.OnAppearing();
-        AttachWindowEvents();
-        // 如果从后台返回且未完成，恢复计时（两种模式一致）
-        ResumeTimerIfNeeded();
-    }
-
-    protected override void OnDisappearing()
-    {
-        base.OnDisappearing();
-        // 页面消失（返回/关闭）时，确保停止计时并解绑
-        PauseTimer();
-        DetachWindowEvents();
-    }
-
     // 拦截返回按钮
     protected override bool OnBackButtonPressed()
     {
-        if (_isQuizFinished) return true;
-        _isQuizFinished = true;
+        if (_confirmingExit || _isNavigatingAway) return true;
+
         MainThread.BeginInvokeOnMainThread(async () =>
         {
-            bool exit = await DisplayAlert("提示", "确定要退出闯关吗？", "退出", "继续答题");
-            if (exit)
+            try
             {
-                Preferences.Set("QuizExitReason", "exit");
-                if (_challengeMode)
+                _confirmingExit = true;
+                bool exit = await DisplayAlert("提示", "确定要退出闯关吗？", "退出", "继续答题");
+                if (exit)
                 {
-                    await EndChallenge(true, "已退出挑战");
-                    return;
+                    Preferences.Set("QuizExitReason", "exit");
+                    // 无论哪种模式，先停止题目倒计时并解绑事件，避免计时回调在退出后继续触发
+                    PauseTimer();
+                    DetachWindowEvents();
+
+                    if (_challengeMode)
+                    {
+                        await EndChallenge(true, "已退出挑战");
+                        return;
+                    }
+                    // 普通模式：退出也保存考试历史
+                    NormalizeUserAnswers();
+                    SaveQuizHistory(_correctCount);
+
+                    _isQuizFinished = true;
+                    _onQuizRoundFinished?.Invoke(false, _correctCount, _quizList.Count);
+                    if (Navigation.ModalStack.Contains(this))
+                        await Navigation.PopModalAsync();
                 }
-                _onQuizRoundFinished?.Invoke(false, _correctCount, _quizList.Count);
-                if (Navigation.ModalStack.Contains(this))
-                    await Navigation.PopModalAsync();
+                else
+                {
+                    //继续答题
+                    ResumeTimerIfNeeded();
+                }
             }
-            else
+            finally
             {
-                _isQuizFinished = false; //继续答题时允许交互
-                ResumeTimerIfNeeded();
+                _confirmingExit = false;
             }
         });
         return true; // 阻止默认返回
-    }
-
-    //兼容 GraphicsView 的 MoveInteraction事件（转调拖动处理）
-    private void OnInputTouchMove(object sender, TouchEventArgs e)
-    {
-        OnInputTouchDrag(sender, e);
     }
 }
 
@@ -885,4 +1008,5 @@ public class QuizHistory
     public int CorrectCount { get; set; }
     public int TotalCount { get; set; }
     public bool IsSuccess { get; set; }
+    public string? RangeText { get; set; } // 新增：保存本次题库范围文本
 }
