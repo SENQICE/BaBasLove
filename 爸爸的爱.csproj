@@ -27,7 +27,7 @@
 		<ApplicationId>com.companyname.</ApplicationId>
 
 		<!-- Versions -->
-		<ApplicationDisplayVersion>1.1.2</ApplicationDisplayVersion>
+		<ApplicationDisplayVersion>1.1.4</ApplicationDisplayVersion>
 		<ApplicationVersion>1</ApplicationVersion>
 
 		<!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
@@ -70,6 +70,9 @@
 
 	<ItemGroup>
 	  <MauiXaml Update="QuizPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="RecordDetailPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="ReviewPage.xaml">

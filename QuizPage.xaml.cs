@@ -242,13 +242,13 @@ public partial class QuizPage : ContentPage
         }
 
         // 挑战模式下：提示按钮作为退出按钮；底部显示挑战层次
-        if (HintButton != null)
+        if (HintBarButton != null)
         {
             if (_challengeMode)
             {
-                HintButton.IsVisible = true;
-                HintButton.Text = "退出";
-                HintButton.IsEnabled = true; // 确保可点
+                HintBarButton.IsVisible = true;
+                HintBarButton.Text = "退出";
+                HintBarButton.IsEnabled = true; // 确保可点
                 if (FooterMetaLabel != null)
                 {
                     FooterMetaLabel.IsVisible = !string.IsNullOrWhiteSpace(_challengeLevel);
@@ -258,7 +258,7 @@ public partial class QuizPage : ContentPage
             }
             else
             {
-                HintButton.Text = "提示";
+                HintBarButton.Text = "提示";
                 if (FooterMetaLabel != null)
                 {
                     FooterMetaLabel.IsVisible = false;
@@ -297,13 +297,13 @@ public partial class QuizPage : ContentPage
         if (_challengeMode)
         {
             // 挑战模式使用退出按钮，始终可用
-            HintButton.IsVisible = true;
-            HintButton.Text = "退出";
-            HintButton.IsEnabled = true;
+            HintBarButton.IsVisible = true;
+            HintBarButton.Text = "退出";
+            HintBarButton.IsEnabled = true;
         }
         else
         {
-            HintButton.IsEnabled = !_writtenMode && _totalHintCount < MaxHints;
+            HintBarButton.IsEnabled = !_writtenMode && _totalHintCount < MaxHints;
         }
         PhoneticLabel.IsVisible = false; // 切题时隐藏音标
 
@@ -436,12 +436,12 @@ public partial class QuizPage : ContentPage
     {
         // 回到前台时恢复计时（两种模式一致）
         ResumeTimerIfNeeded();
-        //保险：挑战模式回到前台时确保退出按钮可点和层次显示
+        //保险：挑战模式回到前来时确保退出按钮可点和层次显示
         if (_challengeMode)
         {
-            HintButton.IsVisible = true;
-            HintButton.IsEnabled = true;
-            HintButton.Text = "退出";
+            HintBarButton.IsVisible = true;
+            HintBarButton.IsEnabled = true;
+            HintBarButton.Text = "退出";
             if (FooterMetaLabel != null)
             {
                 FooterMetaLabel.IsVisible = !string.IsNullOrWhiteSpace(_challengeLevel);
@@ -623,7 +623,7 @@ public partial class QuizPage : ContentPage
         {
             PhoneticLabel.IsVisible = true;
             PhoneticLabel.Text = string.IsNullOrWhiteSpace(vocab.Phonetic) ? "无音标" : $"音标：{vocab.Phonetic}";
-            HintButton.IsEnabled = false;
+            HintBarButton.IsEnabled = false;
         }
         else
         {
@@ -631,7 +631,7 @@ public partial class QuizPage : ContentPage
             {
                 int len = Math.Min(3, vocab.Word.Length);
                 SetText(vocab.Word.Substring(0, len), len); // 光标在末尾
-                _hintCount =1; _totalHintCount++; HintButton.IsEnabled = false; if (_totalHintCount >= MaxHints) HintButton.IsEnabled = false;
+                _hintCount =1; _totalHintCount++; HintBarButton.IsEnabled = false; if (_totalHintCount >= MaxHints) HintBarButton.IsEnabled = false;
             }
         }
     }
@@ -690,6 +690,9 @@ public partial class QuizPage : ContentPage
         DetachWindowEvents();
         int score = _correctCount;
         SaveChallengeRecord(score, _failedVocab, isUserExit, isSuccess: false);
+        // 新增：挑战模式也写入卷子记录
+        NormalizeUserAnswers();
+        SaveQuizHistory(score);
         if (isUserExit)
         {
             Preferences.Set("QuizExitReason", "exit");
@@ -752,6 +755,9 @@ public partial class QuizPage : ContentPage
             // 挑战模式不展示答案清单，直接记录并结束（视为成功通关）
             int score = _correctCount;
             SaveChallengeRecord(score, null, isUserExit: false, isSuccess: true);
+            // 新增：挑战模式也写入卷子记录
+            NormalizeUserAnswers();
+            SaveQuizHistory(score);
             int best = GetChallengeBest();
             var extra = string.IsNullOrWhiteSpace(_challengeLevel) ? string.Empty : $"\n挑战层次：{_challengeLevel}";
             await DisplayAlert("挑战完成", $"本次答对：{score} 个单词。\n最高纪录：{best} 个单词。{extra}", "确定");
@@ -764,7 +770,7 @@ public partial class QuizPage : ContentPage
         QuestionLabel.Text = "判卷中";
         SubmitButton.IsVisible = false;
         NextButton.IsVisible = false;
-        HintButton.IsVisible = false;
+        HintBarButton.IsVisible = false;
         TimerLabel.Text = "";
 
         var summary = string.Join(Environment.NewLine, _quizList.Select((v, i) => $"{i +1}. {v.Meaning} - {v.Word}"));
@@ -789,6 +795,9 @@ public partial class QuizPage : ContentPage
             // 挑战模式不手动录分，直接按当前得分记录
             int score = _correctCount;
             SaveChallengeRecord(score, null, isUserExit: false, isSuccess: true);
+            // 新增：挑战模式也写入卷子记录
+            NormalizeUserAnswers();
+            SaveQuizHistory(score);
             int best = GetChallengeBest();
             var extra = string.IsNullOrWhiteSpace(_challengeLevel) ? string.Empty : $"\n挑战层次：{_challengeLevel}";
             await DisplayAlert("挑战结束", $"本次答对：{score} 个单词。\n最高纪录：{best} 个单词。{extra}", "确定");
@@ -801,7 +810,7 @@ public partial class QuizPage : ContentPage
         QuestionLabel.Text = "判卷区";
         SubmitButton.IsVisible = false;
         NextButton.IsVisible = false;
-        HintButton.IsVisible = false;
+        HintBarButton.IsVisible = false;
         TimerLabel.Text = "";
 
         // 展示所有单词和答案

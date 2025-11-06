@@ -467,34 +467,34 @@ public partial class MainPage : ContentPage
                 var cr = JsonSerializer.Deserialize<List<ChallengeRecord>>(json) ?? new();
                 int best =0;
                 for (int k =0; k < cr.Count; k++) if (cr[k].CorrectCount > best) best = cr[k].CorrectCount;
+                int totalAttempts = cr.Count;
                 for (int i =0; i < cr.Count; i++)
                 {
                     var r = cr[i];
-                    // 列表项显示格式：挑战：[挑战] 答对x个 (历史最高X个)
-                    var title = $"[挑战] 答对{r.CorrectCount}个 (历史最高{best}个)";
+                    int attempt = totalAttempts - i;
+                    // 列表项显示格式： [挑战] [第X次] 答对x个（历史最高x个）
+                    var title = $"[挑战] [第{attempt}次] 答对{r.CorrectCount}个（历史最高{best}个）";
                     var item = new UnifiedHistoryItem
                     {
                         Date = r.Date,
                         Title = title,
                         OnTap = async () =>
                         {
-                            //详情标题需带时间
-                            string titleText = r.IsSuccess || string.IsNullOrWhiteSpace(r.FailedWord)
+                            string header = r.IsSuccess || string.IsNullOrWhiteSpace(r.FailedWord)
                                 ? $"挑战详情（{r.Date:yyyy-MM-dd HH:mm}）"
                                 : $"挑战失败详情（{r.Date:yyyy-MM-dd HH:mm}）";
-
                             if (r.IsSuccess || string.IsNullOrWhiteSpace(r.FailedWord))
                             {
-                                var info = string.IsNullOrWhiteSpace(r.Level)
+                                var content = string.IsNullOrWhiteSpace(r.Level)
                                     ? $"本次答对：{r.CorrectCount} 个单词。"
                                     : $"本次答对：{r.CorrectCount} 个单词。\n挑战层次：{r.Level}";
-                                await DisplayAlert(titleText, info, "关闭");
+                                await Navigation.PushModalAsync(new RecordDetailPage(header, content));
                             }
                             else
                             {
-                                string failed = $"失败单词：{r.FailedMeaning}\n英文：{r.FailedWord}\n音标：{(string.IsNullOrWhiteSpace(r.FailedPhonetic) ? "(无)" : r.FailedPhonetic)}";
-                                if (!string.IsNullOrWhiteSpace(r.Level)) failed += $"\n挑战层次：{r.Level}";
-                                await DisplayAlert(titleText, failed, "关闭");
+                                string content = $"失败单词：{r.FailedMeaning}\n英文：{r.FailedWord}\n音标：{(string.IsNullOrWhiteSpace(r.FailedPhonetic) ? "(无)" : r.FailedPhonetic)}";
+                                if (!string.IsNullOrWhiteSpace(r.Level)) content += $"\n挑战层次：{r.Level}";
+                                await Navigation.PushModalAsync(new RecordDetailPage(header, content));
                             }
                         }
                     };
@@ -506,13 +506,12 @@ public partial class MainPage : ContentPage
 
         // 普通模式历史
         LoadQuizHistories();
-        int totalAttempts = _quizHistories.Count;
+        int totalAttempts2 = _quizHistories.Count;
         for (int i =0; i < _quizHistories.Count; i++)
         {
             var h = _quizHistories[i];
-            int attempt = totalAttempts - i; // 第xx次（按时间先后）
-            // 列表项显示格式：儿子模式[闯关] [第xx次] 答对x个(共x个)
-            string text = $"[闯关] [第{attempt}次] 答对{h.CorrectCount}个(共{h.TotalCount}个)";
+            int attempt = totalAttempts2 - i;
+            string text = $"[闯关] [第{attempt}次] 答对{h.CorrectCount}个（共{h.TotalCount}个）";
             var item = new UnifiedHistoryItem
             {
                 Date = h.Date,
@@ -520,15 +519,13 @@ public partial class MainPage : ContentPage
                 OnTap = async () =>
                 {
                     string detail = string.Join("\n", h.Meanings.Select((m, idx) => $"{idx +1}. 【{m}】\n标准答案: {h.Answers[idx]}\n你的答案: {(idx < h.UserAnswers.Count ? h.UserAnswers[idx] : "(未作答)")}"));
-                    if (!string.IsNullOrWhiteSpace(h.RangeText)) detail += $"\n\n{h.RangeText}"; // 范围追加在最底部
-                    //详情标题需带时间
-                    await DisplayAlert($"闯关详情（{h.Date:yyyy-MM-dd HH:mm}）", detail, "关闭");
+                    if (!string.IsNullOrWhiteSpace(h.RangeText)) detail += $"\n\n{h.RangeText}";
+                    await Navigation.PushModalAsync(new RecordDetailPage($"闯关详情（{h.Date:yyyy-MM-dd HH:mm}）", detail));
                 }
             };
             unified.Add(item);
         }
 
-        // 按时间倒序显示，但不显示时间文本
         foreach (var item in unified.OrderByDescending(x => x.Date))
         {
             var label = new Label { Text = item.Title, FontSize =16 };
