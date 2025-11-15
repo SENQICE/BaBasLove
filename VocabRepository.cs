@@ -145,7 +145,7 @@ public static class VocabRepository
 
         // 三年级下册 第三单元
         new Vocab { Word = "I", Meaning = "我", Book = "三年级下册", Unit = "第三单元", Phonetic = "/aɪ/" },
-        new Vocab { Word = "like", Meaning = "像……那样", Book = "三年级下册", Unit = "第三单元", Phonetic = "/laɪk/" },
+        new Vocab { Word = "like", Meaning = "像……那样；喜欢", Book = "三年级下册", Unit = "第三单元", Phonetic = "/laɪk/" },
         new Vocab { Word = "chicken", Meaning = "鸡肉", Book = "三年级下册", Unit = "第三单元", Phonetic = "/'tʃɪkɪn/" },
         new Vocab { Word = "egg", Meaning = "蛋", Book = "三年级下册", Unit = "第三单元", Phonetic = "/eg/" },
         new Vocab { Word = "rice", Meaning = "米饭", Book = "三年级下册", Unit = "第三单元", Phonetic = "/raɪs/" },
@@ -298,7 +298,7 @@ public static class VocabRepository
         new Vocab { Word = "whose", Meaning = "谁的", Book = "四年级下册", Unit = "第一单元", Phonetic = "/hu:z/" },
         new Vocab { Word = "beside", Meaning = "在旁边（附近）", Book = "四年级下册", Unit = "第一单元", Phonetic = "/bɪ'saɪd/" },
 
-        // 四年级下册 第二单元
+        // 四年级下册 第二单元（已修正月份缩写暴露问题）
         new Vocab { Word = "how", Meaning = "多少", Book = "四年级下册", Unit = "第二单元", Phonetic = "/haʊ/" },
         new Vocab { Word = "cloudy", Meaning = "阴天的；多云的", Book = "四年级下册", Unit = "第二单元", Phonetic = "/'klaʊdi/" },
         new Vocab { Word = "sunny", Meaning = "阳光充足的", Book = "四年级下册", Unit = "第二单元", Phonetic = "/'sʌni/" },
@@ -313,17 +313,17 @@ public static class VocabRepository
         new Vocab { Word = "month", Meaning = "月", Book = "四年级下册", Unit = "第二单元", Phonetic = "/mʌnθ/" },
         new Vocab { Word = "rain", Meaning = "雨；下雨", Book = "四年级下册", Unit = "第二单元", Phonetic = "/reɪn/" },
         new Vocab { Word = "sun", Meaning = "太阳", Book = "四年级下册", Unit = "第二单元", Phonetic = "/sʌn/" },
-        new Vocab { Word = "Apr.", Meaning = "Apr. 四月（缩写）", Book = "四年级下册", Unit = "第二单元", Phonetic = null },
-        new Vocab { Word = "Aug.", Meaning = "Aug. 八月（缩写）", Book = "四年级下册", Unit = "第二单元", Phonetic = null },
-        new Vocab { Word = "Dec.", Meaning = "Dec. 十二月（缩写）", Book = "四年级下册", Unit = "第二单元", Phonetic = null },
-        new Vocab { Word = "Feb.", Meaning = "Feb. 二月（缩写）", Book = "四年级下册", Unit = "第二单元", Phonetic = null },
-        new Vocab { Word = "Jan.", Meaning = "Jan. 一月（缩写）", Book = "四年级下册", Unit = "第二单元", Phonetic = null },
-        new Vocab { Word = "Jul.", Meaning = "Jul. 七月（缩写）", Book = "四年级下册", Unit = "第二单元", Phonetic = null },
-        new Vocab { Word = "Jun.", Meaning = "Jun. 六月（缩写）", Book = "四年级下册", Unit = "第二单元", Phonetic = null },
-        new Vocab { Word = "Mar.", Meaning = "Mar. 三月（缩写）", Book = "四年级下册", Unit = "第二单元", Phonetic = null },
-        new Vocab { Word = "Nov.", Meaning = "Nov. 十一月（缩写）", Book = "四年级下册", Unit = "第二单元", Phonetic = null },
-        new Vocab { Word = "Oct.", Meaning = "Oct. 十月（缩写）", Book = "四年级下册", Unit = "第二单元", Phonetic = null },
-        new Vocab { Word = "Sept.", Meaning = "Sept. 九月（缩写）", Book = "四年级下册", Unit = "第二单元", Phonetic = null },
+        new Vocab { Word = "Apr.", Meaning = "四月（缩写）", Book = "四年级下册", Unit = "第二单元", Phonetic = null },
+        new Vocab { Word = "Aug.", Meaning = "八月（缩写）", Book = "四年级下册", Unit = "第二单元", Phonetic = null },
+        new Vocab { Word = "Dec.", Meaning = "十二月（缩写）", Book = "四年级下册", Unit = "第二单元", Phonetic = null },
+        new Vocab { Word = "Feb.", Meaning = "二月（缩写）", Book = "四年级下册", Unit = "第二单元", Phonetic = null },
+        new Vocab { Word = "Jan.", Meaning = "一月（缩写）", Book = "四年级下册", Unit = "第二单元", Phonetic = null },
+        new Vocab { Word = "Jul.", Meaning = "七月（缩写）", Book = "四年级下册", Unit = "第二单元", Phonetic = null },
+        new Vocab { Word = "Jun.", Meaning = "六月（缩写）", Book = "四年级下册", Unit = "第二单元", Phonetic = null },
+        new Vocab { Word = "Mar.", Meaning = "三月（缩写）", Book = "四年级下册", Unit = "第二单元", Phonetic = null },
+        new Vocab { Word = "Nov.", Meaning = "十一月（缩写）", Book = "四年级下册", Unit = "第二单元", Phonetic = null },
+        new Vocab { Word = "Oct.", Meaning = "十月（缩写）", Book = "四年级下册", Unit = "第二单元", Phonetic = null },
+        new Vocab { Word = "Sept.", Meaning = "九月（缩写）", Book = "四年级下册", Unit = "第二单元", Phonetic = null },
 
         // 四年级下册 第三单元
         new Vocab { Word = "tall", Meaning = "高的", Book = "四年级下册", Unit = "第三单元", Phonetic = "/tɔ:l/" },
@@ -543,7 +543,7 @@ public static class VocabRepository
         new Vocab { Word = "breakfast", Meaning = "早餐；早饭", Book = "六年级上册", Unit = "第一单元", Phonetic = "/'brekfəst/" },
         new Vocab { Word = "dinner", Meaning = "正餐、晚餐", Book = "六年级上册", Unit = "第一单元", Phonetic = "/'dɪnə(r)/" },
         new Vocab { Word = "me", Meaning = "我（的宾格）", Book = "六年级上册", Unit = "第一单元", Phonetic = "/em 'i:/" },
-        new Vocab { Word = "them", Meaning = "他（她、它）们", Book = "六年级上册", Unit = "第一单元", Phonetic = "/ðem;ðəm/" },
+        new Vocab { Word = "them", Meaning = "他（她、它）们（宾格）", Book = "六年级上册", Unit = "第一单元", Phonetic = "/ðem;ðəm/" },
         new Vocab { Word = "him", Meaning = "（用作宾语或表语）他", Book = "六年级上册", Unit = "第一单元", Phonetic = "/hɪm/" },
         new Vocab { Word = "half", Meaning = "一半；半数", Book = "六年级上册", Unit = "第一单元", Phonetic = "/hɑ:f/, /hæf/" },
         new Vocab { Word = "Mr.", Meaning = "先生", Book = "六年级上册", Unit = "第一单元", Phonetic = "/'mɪstə(r)/" },

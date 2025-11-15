@@ -241,7 +241,7 @@ public partial class SettingsPage : ContentPage
 
     private async void OnChangePasswordClicked(object sender, EventArgs e)
     {
-        string currentPwd = Preferences.Get("ParentPassword", "z123456");
+        string currentPwd = Preferences.Get("ParentPassword", "123456");
         string oldPwd = await DisplayPromptAsync(
             "更改密码",
             "请输入当前家长密码",

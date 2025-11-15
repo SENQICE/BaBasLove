@@ -144,23 +144,36 @@ public partial class QuizPage : ContentPage
         // 打乱一次
         var shuffled = _challengeSource.OrderBy(_ => Guid.NewGuid()).ToList();
 
-        // 每10个正常词随机插入1个扩充包单词（若扩充包非空）
+        // 按分段概率混入扩充词：
+        //1-10:0%，11-20:20%，21-30:50%，31-40:80%，41-50:100%，之后每10个必插入1个
         if (VocabRepository.ExtraVocabs != null && VocabRepository.ExtraVocabs.Count >0)
         {
             var mixed = new List<Vocab>(shuffled.Count + shuffled.Count /10 +4);
-            int countInGroup =0;
+            int countInGroup =0; // 当前分组内已加入的基础词数量（不含扩充）
+            int blockIndex =0; // 分组序号（0基）：0=1-10，1=11-20，...
+
             foreach (var v in shuffled)
             {
                 mixed.Add(v);
                 countInGroup++;
+
                 if (countInGroup ==10)
                 {
+                    double probability = GetExtraProbabilityForBlock(blockIndex);
+                    bool shouldInsertExtra = probability >=1.0 || (probability >0 && Random.Shared.NextDouble() < probability);
+
+                    if (shouldInsertExtra)
+                    {
+                        var extra = VocabRepository.ExtraVocabs[Random.Shared.Next(VocabRepository.ExtraVocabs.Count)];
+                        // 在最近的10个基础词范围内随机插入位置（不包含之前组的元素）
+                        int start = Math.Max(0, mixed.Count -10); //这10个基础词的范围
+                        int insertPos = Random.Shared.Next(start, mixed.Count +1);
+                        mixed.Insert(insertPos, extra);
+                    }
+
+                    // 下一组
                     countInGroup =0;
-                    var extra = VocabRepository.ExtraVocabs[Random.Shared.Next(VocabRepository.ExtraVocabs.Count)];
-                    // 在最近的10个正常词范围内随机插入位置
-                    int start = Math.Max(0, mixed.Count -10);
-                    int insertPos = Random.Shared.Next(start, mixed.Count +1);
-                    mixed.Insert(insertPos, extra);
+                    blockIndex++;
                 }
             }
             _quizList.AddRange(mixed);
@@ -169,6 +182,19 @@ public partial class QuizPage : ContentPage
         {
             _quizList.AddRange(shuffled);
         }
+    }
+
+    private static double GetExtraProbabilityForBlock(int blockIndex)
+    {
+        return blockIndex switch
+        {
+            0 =>0.0, //1-10
+            1 =>0.2, //11-20
+            2 =>0.5, //21-30
+            3 =>0.8, //31-40
+            4 =>1.0, //41-50
+            _ =>1.0 //之后每10个必插入1个
+        };
     }
 
     private void StartCaretBlink()

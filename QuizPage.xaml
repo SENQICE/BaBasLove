@@ -112,8 +112,8 @@
  <Button ClassId="Letter" Text="k" Clicked="OnKeyButtonClicked" Grid.Column="7" HorizontalOptions="Fill"/>
  <Button ClassId="Letter" Text="l" Clicked="OnKeyButtonClicked" Grid.Column="8" HorizontalOptions="Fill"/>
  </Grid>
- <!-- 第三行 zxcvbnm7列均分 -->
- <Grid Grid.Row="2" ColumnSpacing="4" ColumnDefinitions="*,*,*,*,*,*,*">
+ <!-- 第三行 zxcvbnm + '8列均分 -->
+ <Grid Grid.Row="2" ColumnSpacing="4" ColumnDefinitions="*,*,*,*,*,*,*,*">
  <Button ClassId="Letter" Text="z" Clicked="OnKeyButtonClicked" Grid.Column="0" HorizontalOptions="Fill"/>
  <Button ClassId="Letter" Text="x" Clicked="OnKeyButtonClicked" Grid.Column="1" HorizontalOptions="Fill"/>
  <Button ClassId="Letter" Text="c" Clicked="OnKeyButtonClicked" Grid.Column="2" HorizontalOptions="Fill"/>
@@ -121,6 +121,7 @@
  <Button ClassId="Letter" Text="b" Clicked="OnKeyButtonClicked" Grid.Column="4" HorizontalOptions="Fill"/>
  <Button ClassId="Letter" Text="n" Clicked="OnKeyButtonClicked" Grid.Column="5" HorizontalOptions="Fill"/>
  <Button ClassId="Letter" Text="m" Clicked="OnKeyButtonClicked" Grid.Column="6" HorizontalOptions="Fill"/>
+ <Button ClassId="Letter" Text="'" Clicked="OnKeyButtonClicked" Grid.Column="7" HorizontalOptions="Fill"/>
  </Grid>
  <!-- 第四行 控制键：大小写/空格/./提示 =2:4:2:2 -->
  <Grid Grid.Row="3" ColumnSpacing="8" ColumnDefinitions="2*,4*,2*,2*">
